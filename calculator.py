@@ -212,8 +212,11 @@ def main():
             "global_coefficient": "Global Coefficient"
         }
     }
+    # Choisissez la langue (par exemple, 'fr' ou 'en')
+    lang_code = 'en'  # Vous pouvez changer cela selon votre besoin
 
-    st.title(titles[lang_code]["title"])
+    # Centre le titre
+    st.markdown(f"<h1 style='text-align: center;'>{titles[lang_code]['title']}</h1>", unsafe_allow_html=True)
 
     # Section importation de fichiers dans la sidebar
     with st.sidebar:
