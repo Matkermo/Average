@@ -418,7 +418,7 @@ def main():
                 hide_index=True
             )
         else:
-            st.info("ℹ️ Aucune donnée chargée. Veuillez importer un fichier dans l'onglet 'Tableau de bord'.")
+            st.info("ℹ️ Aucune donnée chargée / No Data Loaded ")
 
     with tab3:
         # Onglet téléchargement des résultats
