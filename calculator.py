@@ -163,41 +163,36 @@ def generate_pdf(global_average, averages, data):
     return pdf_file.name  # Retourne le chemin du PDF généré
 
 def main():
-    st.set_page_config(layout="wide")
-    image_url = ""
     st.markdown(
     f"""
     <style>
-    .stApp {{
-        background: linear-gradient(rgba(255,255,255,0.5), rgba(255,255,255,0.5)), url("{image_url}") center center/cover no-repeat fixed;
-    }}
-[data-testid="stSidebar"] {{
-        background: transparent !important;
-    }}
+        [data-testid="stSidebar"] {{
+                background: transparent !important;
+            }}
 
-    .sidebar .sidebar-content {{
-        border: 1px solid rgba(0, 0, 0, 0.2);
-        border-radius: 8px;
-        padding: 10px;
-        margin-bottom: 20px;
-    }}
+            .sidebar .sidebar-content {{
+                border: 1px solid rgba(0, 0, 0, 0.2);
+                border-radius: 8px;
+                padding: 10px;
+                margin-bottom: 20px;
+            }}
 
-    .stSidebar > div:first-child {{
-        border-radius: 8px;
-    }}
+            .stSidebar > div:first-child {{
+                border-radius: 8px;
+            }}
 
-    /* Sélecteur de langue : cible le wrapper principal uniquement */
-    [data-baseweb="select"] {{
-        border: 1px solid rgba(0, 0, 0, 0.2);
-        border-radius: 8px;
-        padding: 0px;  /* réduit la hauteur excessive */
-    }}
+            /* Sélecteur de langue : cible le wrapper principal uniquement */
+            [data-baseweb="select"] {{
+                border: 1px solid rgba(0, 0, 0, 0.2);
+                border-radius: 8px;
+                padding: 0px;  /* réduit la hauteur excessive */
+            }}
 
-    /* On évite de surstyler les composants complexes comme uploader et boutons */
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+            /* On évite de surstyler les composants complexes comme uploader et boutons */
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
     # Langue
     language = st.sidebar.selectbox("", options=["Français 🇫🇷", "Anglais 🇺🇸"])
     lang_code = "fr" if "Français" in language else "en"
