@@ -162,11 +162,43 @@ def generate_pdf(global_average, averages, data):
 
     return pdf_file.name  # Retourne le chemin du PDF généré
 
-
 def main():
     st.set_page_config(layout="wide")
+    image_url = ""
+    st.markdown(
+    f"""
+    <style>
+    .stApp {{
+        background: linear-gradient(rgba(255,255,255,0.5), rgba(255,255,255,0.5)), url("{image_url}") center center/cover no-repeat fixed;
+    }}
+[data-testid="stSidebar"] {{
+        background: transparent !important;
+    }}
 
-    # Menu déroulant pour la langue
+    .sidebar .sidebar-content {{
+        border: 1px solid rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 20px;
+    }}
+
+    .stSidebar > div:first-child {{
+        border-radius: 8px;
+    }}
+
+    /* Sélecteur de langue : cible le wrapper principal uniquement */
+    [data-baseweb="select"] {{
+        border: 1px solid rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        padding: 0px;  /* réduit la hauteur excessive */
+    }}
+
+    /* On évite de surstyler les composants complexes comme uploader et boutons */
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+    # Langue
     language = st.sidebar.selectbox("", options=["Français 🇫🇷", "Anglais 🇺🇸"])
     lang_code = "fr" if "Français" in language else "en"
    
@@ -305,8 +337,43 @@ def main():
             plt.tight_layout()
             st.pyplot(fig)  # Assurez-vous que `fig` est défini avant cet appel
 
+            # Tableau synthétique
+            st.subheader(titles[lang_code]["summary_title"])
+
+            summary_df = pd.DataFrame({
+                'Matière': averages.keys(),
+                'Moyenne': [avg["average"] for avg in averages.values()],
+                'Coefficient global': [avg["global_coefficient"] for avg in averages.values()]
+            })
+
+            def colorize(val):
+                return get_average_color(val)
+
+            styled_summary = summary_df.style\
+                .applymap(colorize, subset=['Moyenne'])\
+                .format({
+                    "Moyenne": "{:.1f}",
+                    "Coefficient global": "{:.1f}"
+                })\
+                .set_table_styles([
+                    {'selector': 'thead th', 'props': [('text-align', 'center')]},
+                    {'selector': 'tbody tr:hover', 'props': [('background-color', '#e6f3ff')]}
+                ])\
+                .set_properties(subset=["Matière"], **{'text-align': 'left'})\
+                .set_properties(subset=["Moyenne", "Coefficient global"], **{'text-align': 'center'})
+
+            st.markdown(
+                f"""
+                <div style="display: flex; justify-content: center;">
+                    <div style="width: fit-content;">
+                        {styled_summary.to_html(escape=False)}
+                """,
+                unsafe_allow_html=True
+            )
+
+
     with tab2:
-        st.header(titles[lang_code]["full_synthesis"])
+        #st.header(titles[lang_code]["full_synthesis"])
 
         if 'courses' in st.session_state:
             courses = st.session_state.courses
@@ -329,97 +396,57 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
 
-
-            # Graphique dans l'onglet Synthèse
-            st.subheader(titles[lang_code]["summary_graph_title"])
-            fig, ax = plt.subplots(figsize=(10, 5))
-            bars = ax.bar(averages.keys(), [avg["average"] for avg in averages.values()], color='#6495ED')
-            for bar in bars:
-                height = bar.get_height()
-                ax.text(
-                    bar.get_x() + bar.get_width() / 2,
-                    height / 2,
-                    f"{height:.2f}",
-                    ha='center',
-                    va='center',
-                    color='white',
-                    fontsize=12,
-                    fontweight='bold'
-                )
-            ax.axhline(y=global_average, color='#FF0000', linestyle='-',  # Ligne de moyenne en rouge vif
-                       label=f"{titles[lang_code]['global_average']} ({global_average:.2f})", linewidth=2)
-            ax.set_xlabel("", fontsize=12)
-            ax.set_ylabel("", fontsize=12)
-            ax.tick_params(axis='x', rotation=45)
-            ax.legend(loc='upper right', fontsize=10)
-            plt.tight_layout()
-            st.pyplot(fig)
-
-            # Tableau synthétique
-            st.subheader(titles[lang_code]["summary_title"])
-            summary_df = pd.DataFrame({
-                'Matière': averages.keys(),
-                'Moyenne': [avg["average"] for avg in averages.values()],
-                'Coefficient global': [avg["global_coefficient"] for avg in averages.values()]
-            })
-
-            def colorize(val):
-                return get_average_color(val)
-
-            st.dataframe(
-                summary_df.style
-                .applymap(colorize, subset=['Moyenne'])
-                .format({"Moyenne": "{:.1f}", "Coefficient global": "{:.1f}"})
-                .set_properties(**{
-                    'text-align': 'center',
-                    'min-width': '100px'
-                })
-                .set_table_styles([{
-                    'selector': 'tbody tr:hover',
-                    'props': [('background-color', '#e6f3ff')]
-                }, {
-                    'selector': 'th',
-                    'props': [('font-size', '14px'), ('text-align', 'center')]
-                }], overwrite=False),
-                use_container_width=True,
-                hide_index=True
-            )
-
+            # Détail des notes
             # Détail des notes
             st.subheader(titles[lang_code]["complete_detail_title"])
-            data = []
-            for course, grades in courses.items():
-                for result, coefficient, global_coefficient in grades:
-                    data.append({
-                        titles[lang_code]["note"]: result,
-                        titles[lang_code]["coefficient"]: coefficient,
-                        titles[lang_code]["global_coefficient"]: global_coefficient,
-                        "Matière": course
-                    })
 
-            st.dataframe(
-                pd.DataFrame(data).style
-                .format({"Matière": "{}",
-                        titles[lang_code]["note"]: "{:.1f}", 
-                        titles[lang_code]["coefficient"]: "{:.1f}", 
-                        titles[lang_code]["global_coefficient"]: "{:.1f}"})
-                .set_properties(**{
-                    'text-align': 'center',
-                    'min-width': '100px'
-                })
-                .set_table_styles([{
-                    'selector': 'tbody tr:hover',
-                    'props': [('background-color', '#e6f3ff')]
-                }, {
-                    'selector': 'th',
-                    'props': [('font-size', '14px'), ('text-align', 'center')]
-                }], overwrite=False),
-                use_container_width=True,
-                hide_index=True
-            )
-        else:
-            st.info("ℹ️ Aucune donnée chargée / No Data Loaded ")
+            if 'courses' in locals() and courses:  # Vérifie que courses existe et contient des données
+                data = []
+                for course, grades in courses.items():
+                    for result, coefficient, global_coefficient in grades:
+                        data.append({
+                            "Matière": course,
+                            titles[lang_code]["note"]: result,
+                            titles[lang_code]["coefficient"]: coefficient,
+                            titles[lang_code]["global_coefficient"]: global_coefficient
+                        })
 
+                ordered_columns = [
+                    "Matière", 
+                    titles[lang_code]["note"], 
+                    titles[lang_code]["coefficient"], 
+                    titles[lang_code]["global_coefficient"]
+                ]
+
+                df_detail = pd.DataFrame(data)[ordered_columns]
+
+                styled_df = df_detail.style\
+                    .format({
+                        "Matière": "{}", 
+                        titles[lang_code]["note"]: "{:.1f}",
+                        titles[lang_code]["coefficient"]: "{:.1f}",
+                        titles[lang_code]["global_coefficient"]: "{:.1f}"
+                    })\
+                    .set_table_styles([
+                        {'selector': 'thead th', 'props': [('text-align', 'center')]},
+                        {'selector': 'tbody tr:hover', 'props': [('background-color', '#e6f3ff')]}
+                    ])\
+                    .set_properties(subset=["Matière"], **{'text-align': 'left'})\
+                    .set_properties(subset=ordered_columns[1:], **{'text-align': 'center'})
+
+                st.markdown(
+                    f"""
+                    <div style="display: flex; justify-content: center;">
+                        <div style="width: fit-content;">
+                            {styled_df.to_html(escape=False)}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+            else:
+                st.info("ℹ️ Aucune donnée chargée / No Data Loaded ")
     with tab3:
         # Onglet téléchargement des résultats
         st.header(titles[lang_code]["download"])
