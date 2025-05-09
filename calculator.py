@@ -164,35 +164,44 @@ def generate_pdf(global_average, averages, data):
 
 def main():
     st.markdown(
-    f"""
+    """
     <style>
-        [data-testid="stSidebar"] {{
-                background: transparent !important;
-            }}
+    /* Sidebar Styles pour iPad/tablette - Overlay devant le contenu */
+    [data-testid="stSidebar"] {
+        z-index: 2000 !important;
+        position: fixed !important;
+        background: #fff !important;
+        box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    }
+    /* Ajuste la largeur sur tablette */
+    @media (max-width: 991px) {
+        [data-testid="stSidebar"] {
+            width: 260px !important;
+            min-width: 180px !important;
+        }
+    }
 
-            .sidebar .sidebar-content {{
-                border: 1px solid rgba(0, 0, 0, 0.2);
-                border-radius: 8px;
-                padding: 10px;
-                margin-bottom: 20px;
-            }}
+    .stSidebar > div:first-child {
+        border-radius: 8px;
+    }
+    /* Bordures sur le contenu de la sidebar (si tu veux garder) */
+    .sidebar .sidebar-content {
+        border: 1px solid rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 20px;
+    }
 
-            .stSidebar > div:first-child {{
-                border-radius: 8px;
-            }}
-
-            /* Sélecteur de langue : cible le wrapper principal uniquement */
-            [data-baseweb="select"] {{
-                border: 1px solid rgba(0, 0, 0, 0.2);
-                border-radius: 8px;
-                padding: 0px;  /* réduit la hauteur excessive */
-            }}
-
-            /* On évite de surstyler les composants complexes comme uploader et boutons */
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
+    /* Touche pas aux boutons Upload, etc */
+    [data-baseweb="select"] {
+        border: 1px solid rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        padding: 0px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+    )
     # Langue
     language = st.sidebar.selectbox("", options=["Français 🇫🇷", "Anglais 🇺🇸"])
     lang_code = "fr" if "Français" in language else "en"
@@ -434,8 +443,6 @@ def main():
                     <div style="display: flex; justify-content: center;">
                         <div style="width: fit-content;">
                             {styled_df.to_html(escape=False)}
-                        </div>
-                    </div>
                     """,
                     unsafe_allow_html=True
                 )
