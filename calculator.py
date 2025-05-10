@@ -184,7 +184,7 @@ def main():
     .stSidebar > div:first-child {
         border-radius: 8px;
     }
-    /* Bordures sur le contenu de la sidebar (si tu veux garder) */
+    /* Bordures sur le contenu de la sidebar */
     .sidebar .sidebar-content {
         border: 1px solid rgba(0, 0, 0, 0.2);
         border-radius: 8px;
@@ -198,7 +198,14 @@ def main():
         border-radius: 8px;
         padding: 0px;
     }
-    </style>
+       /* Modifier la couleur de la zone de dépôt */
+    [data-testid="stFileUploader"] > div {
+        background-color: #f7f7f7; /* Gris très clair */
+        border: 1px solid rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        padding: 10px;
+    }
+    <style>
     """,
     unsafe_allow_html=True
     )
