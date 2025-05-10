@@ -479,25 +479,17 @@ def main():
             else:
                 st.info("ℹ️ Aucune donnée chargée / No Data Loaded ")
     with tab3:
+
         # Onglet téléchargement des résultats
         st.header(titles[lang_code]["download"])
 
         if 'courses' in st.session_state:
             courses = st.session_state.courses
 
-            # Éditeur de données
-            #st.warning(titles[lang_code]["alert_message"]) supprimé temporairement
-
             # Affichage de la moyenne générale
             global_average = calculate_global_average(calculate_average(courses))
-            if global_average < 10:
-                color = "red"
-            elif global_average < 12:
-                color = "orange"
-            else:
-                color = "green"
+            color = "red" if global_average < 10 else "orange" if global_average < 12 else "green"
 
-            # Affichage stylisé avec saut de ligne et valeur bien visible
             st.markdown(f"""
                 <div style="text-align: center; margin: 5px 0 10px; padding: 8px; background-color: #f0f2f6; border-radius: 8px;">
                     <h3 style="margin-bottom: 4px;">🎯 {titles[lang_code]["global_average"]}</h3>
@@ -510,23 +502,36 @@ def main():
                 for result, coefficient, global_coefficient in grades:
                     data.append({
                         "Matière": course,
-                        "Note": result,
-                        "Coefficient": coefficient,
-                        "Coef. Global": global_coefficient
+                        "Note": round(result, 1),             # Arrondi à 1 chiffre après la virgule
+                        "Coefficient": round(coefficient, 0),  # Arrondi à 0 chiffre après la virgule
+                        "Coef. Global": round(global_coefficient, 1)  # Arrondi à 1 chiffre après la virgule
                     })
 
             df = pd.DataFrame(data)
             df = df[['Matière', 'Note', 'Coefficient', 'Coef. Global']]
-            df[['Note', 'Coefficient', 'Coef. Global']] = df[['Note', 'Coefficient', 'Coef. Global']].round(1)
-            edited_df = st.data_editor(
-                df,
-                column_config={
-                    "Matière": st.column_config.TextColumn(width=80),
-                    "Note": st.column_config.NumberColumn(width=80, format="%.1f"),
-                    "Coefficient": st.column_config.NumberColumn(width=80, format="%.1f"),
-                    "Coef. Global": st.column_config.NumberColumn(width=80, format="%.1f")
-                },
-                height=len(df) * 40  # Ajustez cette valeur pour définir la hauteur
+
+            # Styler pour le DataFrame
+            styled_df = df.style \
+                .set_table_styles([
+                    {'selector': 'thead th', 'props': [('text-align', 'center')]},
+                    {'selector': 'tbody tr:hover', 'props': [('background-color', '#e6f3ff')]}
+                ]) \
+                .set_properties(subset=["Matière"], **{'text-align': 'left'}) \
+                .set_properties(subset=["Note", "Coef. Global", "Coefficient"], **{'text-align': 'center'}) \
+                .format({
+                    "Note": "{:.1f}", 
+                    "Coefficient": "{:.0f}",  # Format à 0 chiffre après la virgule
+                    "Coef. Global": "{:.1f}"
+                })
+
+            # Affichage du tableau sans balises de fermeture superflues
+            st.markdown(
+                f"""
+                <div style="display: flex; justify-content: center;">
+                    <div style="width: fit-content;">
+                        {styled_df.to_html(escape=False)}
+                """,
+                unsafe_allow_html=True
             )
 
             if st.button("📥 Télécharger le résumé", key="long_button", help="Cliquez ici pour télécharger votre résumé"):
@@ -539,9 +544,9 @@ def main():
                         for result, coefficient, global_coefficient in grades:
                             data.append({
                                 "Matière": course,
-                                "Note": result,
-                                "Coefficient": coefficient,
-                                "Coef. Global": global_coefficient
+                                "Note": round(result, 1),             # Arrondi à 1 chiffre après la virgule
+                                "Coefficient": round(coefficient, 0),  # Arrondi à 0 chiffre après la virgule
+                                "Coef. Global": round(global_coefficient, 1)  # Arrondi à 1 chiffre après la virgule
                             })
 
                     pdf_path = generate_pdf(global_average, averages, data)
@@ -561,8 +566,8 @@ def main():
                 else:
                     st.warning("📋 Aucune donnée à inclure dans le PDF. Veuillez importer des cours.")
 
-            if 'courses' not in st.session_state:
-                st.info("ℹ️ Aucune donnée chargée. Veuillez importer un fichier dans l'onglet 'Tableau de bord'.")
+        else:
+            st.info("ℹ️ Aucune donnée chargée. Veuillez importer un fichier dans l'onglet 'Tableau de bord'.")
 
 
 if __name__ == '__main__':
