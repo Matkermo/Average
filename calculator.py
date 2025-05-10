@@ -224,6 +224,9 @@ def main():
         max-width: 100%;
         height: auto;
     }
+    button[kind="header"][aria-expanded="true"] > div:nth-child(1) > div > svg {
+    transform: rotate(180deg);
+    }
     </style>
     """,
     unsafe_allow_html=True
