@@ -199,11 +199,22 @@ def main():
         padding: 0px;
     }
        /* Modifier la couleur de la zone de dépôt */
-    [data-testid="stFileUploader"] > div {
+    section[data-testid="stFileUploaderDropzone"] {
         background-color: #f7f7f7; /* Gris très clair */
         border: 1px solid rgba(0, 0, 0, 0.2);
         border-radius: 8px;
         padding: 10px;
+    }
+    /* Modifier l'apparence du sélecteur de langue */
+    div[data-baseweb="select"] > div {
+        background-color: #f7f7f7; /* Gris très clair */
+    }
+        /* Ajuste la largeur sur tablette */
+    @media (max-width: 991px) {
+        [data-testid="stSidebar"] {
+            width: 200px !important;
+            min-width: 150px !important;
+        }
     }
     <style>
     """,
@@ -216,7 +227,7 @@ def main():
     titles = {
         "fr": {
             "title": "👩‍🎓 Application de calcul de moyenne 🧑‍🎓",
-            "import_data": "📤 Importer des données",
+            "import_data": "📥 Importer des données",
             "global_average": "Moyenne générale",
             "dashboard": "📊 synthèse globale ",
             "full_synthesis": "📋 Détails par Matière",
@@ -228,15 +239,15 @@ def main():
             "complete_detail_title": "🧮 Détail complet des notes",
             #"update_button": "🔄 Mettre à jour les données",
             #"alert_message": "⚠️ Attention : Toute modification sera appliquée après avoir cliqué sur 'Mettre à jour les données'", supprimé temporairement
-            "example_download": "📥 Télécharger un fichier exemple",
-            "title_download_sample": "exemple de fichier",
+            "example_download": "📤 Télécharger un fichier exemple",
+            "title_download_sample": "📤 Exemple de fichier",
             "note": "Note",
             "coefficient": "Coefficient",
             "global_coefficient": "Coef. Global"
         },
         "en": {
             "title": "👩‍🎓 Average Calculation App 🧑‍🎓 ",
-            "import_data": "📤 Import Data",
+            "import_data": "📥 Import Data",
             "global_average": "General Average",
             "dashboard": "📊 Dashboard",
             "full_synthesis": "📋 Courses Details",
@@ -248,8 +259,8 @@ def main():
             "complete_detail_title": "🧮 Detailed Scores",
             #"update_button": "🔄 Update Data",
             #"alert_message": "⚠️ Attention: Any changes will be applied after clicking 'Update Data'",
-            "title_download_sample": "Download a file",
-            "example_download": "📥 Download example file",
+            "title_download_sample": "📤 Download a file",
+            "example_download": "📤 Download example file",
             "note": "Note",
             "coefficient": "Coefficient",
             "global_coefficient": "Global Coefficient"
