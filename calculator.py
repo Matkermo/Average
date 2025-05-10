@@ -515,16 +515,18 @@ def main():
                         "Coef. Global": global_coefficient
                     })
 
+            df = pd.DataFrame(data)
+            df = df[['Matière', 'Note', 'Coefficient', 'Coef. Global']]
+            df[['Note', 'Coefficient', 'Coef. Global']] = df[['Note', 'Coefficient', 'Coef. Global']].round(1)
             edited_df = st.data_editor(
-                pd.DataFrame(data),
-                num_rows="dynamic",
-                use_container_width=True,
+                df,
                 column_config={
-                    "Matière": st.column_config.TextColumn(width="medium"),
-                    "Note": st.column_config.NumberColumn(width="small", format="%.1f"),
-                    "Coefficient": st.column_config.NumberColumn(width="small", format="%.1f"),
-                    "Coef. Global": st.column_config.NumberColumn(width="small", format="%.1f")
-                }
+                    "Matière": st.column_config.TextColumn(width=80),
+                    "Note": st.column_config.NumberColumn(width=80, format="%.1f"),
+                    "Coefficient": st.column_config.NumberColumn(width=80, format="%.1f"),
+                    "Coef. Global": st.column_config.NumberColumn(width=80, format="%.1f")
+                },
+                height=len(df) * 40  # Ajustez cette valeur pour définir la hauteur
             )
 
             if st.button("📥 Télécharger le résumé", key="long_button", help="Cliquez ici pour télécharger votre résumé"):
