@@ -77,14 +77,14 @@ def generate_pdf(global_average, averages, data):
 
     # Ajouter la moyenne globale
     global_avg_style = styles['Normal'].clone('GlobalAverage')
-    global_avg_style.fontSize += 10  # Augmente la taille de police
+    global_avg_style.fontSize += 14  # Augmente la taille de police
     global_avg_style.alignment = 1    # Centre le texte
 
     global_avg_text = f"Moyenne Globale: <b>{global_average:.2f}</b>"
     avg_paragraph = Paragraph(global_avg_text, global_avg_style)
     elements.append(avg_paragraph)
 
-    # Génération du graphique à barres
+   # Génération du graphique à barres
     fig, ax = plt.subplots(figsize=(10, 6))  # Ajuster la taille du graphique
     courses = list(averages.keys())
     avg_values = [details["average"] for details in averages.values()]
@@ -96,13 +96,17 @@ def generate_pdf(global_average, averages, data):
     # Ajouter les étiquettes de données sur les barres
     for bar in bars:
         yval = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width() / 2, yval + 0.2, round(yval, 2), ha='center', va='bottom')
+        ax.text(bar.get_x() + bar.get_width() / 2, yval + 0.2, round(yval, 2), ha='center', va='bottom', fontsize=24)  # Taille des valeurs
 
     # Enlever les titres et axes
-    ax.set_title('')  # Supprimer le titre du graphique (ou commenté)
-    ax.set_xlabel('')  # Supprimer le label de l'axe des X
-    ax.set_ylabel('')  # Supprimer le label de l'axe des Y
-    ax.yaxis.grid(True)  # Afficher la grille horizontaleax.set_xlabel('Courses', fontsize=12)
+    ax.set_title('', fontsize=18)  # Supprimer le titre du graphique
+    ax.set_xlabel('', fontsize=18)  # Supprimer le label de l'axe des X
+    ax.set_ylabel('', fontsize=18)  # Supprimer le label de l'axe des Y
+    ax.yaxis.grid(True)  # Afficher la grille horizontale
+
+    # Ajuster la taille des étiquettes de l'axe X
+    ax.set_xticks(range(len(courses)))  # Assurez-vous que l'axe X connaît les positions des ticks
+    ax.set_xticklabels(courses, fontsize=16)  # Augmenter la taille des étiquettes des matières
     
 
     # Ajouter une ligne pour la moyenne globale
@@ -358,15 +362,17 @@ def main():
                     ha='center',
                     va='center',
                     color='white',
-                    fontsize=12,
+                    fontsize=16,
                     fontweight='bold'
                 )
             ax.axhline(y=global_average, color='#FF0000', linestyle='-',  
                        label=f"{titles[lang_code]['global_average']} ({global_average:.2f})", linewidth=2)
-            ax.set_xlabel("", fontsize=12)
+            ax.set_xlabel("", fontsize=16)
             ax.set_ylabel("", fontsize=12)
             ax.tick_params(axis='x', rotation=45)
-            ax.legend(loc='upper right', fontsize=10)
+            # Ajuster la taille des étiquettes des matières sur l'axe X
+            ax.set_xticklabels(averages.keys(), fontsize=18 )  # Taille de police augmentée des matières
+            ax.legend(loc='upper right', fontsize=16)
             plt.tight_layout()
             st.pyplot(fig)  # Assurez-vous que `fig` est défini avant cet appel
 
