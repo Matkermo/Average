@@ -16,6 +16,10 @@ from reportlab.platypus import Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
 
+# Ajouter une image dans la sidebar
+st.sidebar.image("https://raw.githubusercontent.com/Matkermo/Average/main/doute.jpg")
+
+
 def get_average_color(average):
     if average >= 12:
         return "color: #4CAF50; font-weight: bold;"  # Vert foncé
@@ -173,11 +177,15 @@ def main():
         background: #fff !important;
         box-shadow: 0 0 15px rgba(0,0,0,0.08);
     }
+    [data-testid="stSidebar"] > div {
+        overflow-y: auto;
+        height: 100vh;
+    }
     /* Ajuste la largeur sur tablette */
     @media (max-width: 991px) {
         [data-testid="stSidebar"] {
-            width: 260px !important;
-            min-width: 180px !important;
+            width: 200px !important;
+            min-width: 150px !important;
         }
     }
 
@@ -198,7 +206,7 @@ def main():
         border-radius: 8px;
         padding: 0px;
     }
-       /* Modifier la couleur de la zone de dépôt */
+    /* Modifier la couleur de la zone de dépôt */
     section[data-testid="stFileUploaderDropzone"] {
         background-color: #f7f7f7; /* Gris très clair */
         border: 1px solid rgba(0, 0, 0, 0.2);
@@ -209,14 +217,14 @@ def main():
     div[data-baseweb="select"] > div {
         background-color: #f7f7f7; /* Gris très clair */
     }
-        /* Ajuste la largeur sur tablette */
-    @media (max-width: 991px) {
-        [data-testid="stSidebar"] {
-            width: 200px !important;
-            min-width: 150px !important;
-        }
+    /* Centrer l'image dans la sidebar */
+    [data-testid="stSidebar"] img {
+        display: block;
+        margin: 0 auto;
+        max-width: 100%;
+        height: auto;
     }
-    <style>
+    </style>
     """,
     unsafe_allow_html=True
     )
