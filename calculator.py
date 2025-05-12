@@ -4,7 +4,6 @@ from io import BytesIO
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle  # Added this line
 import tempfile
 import os
 from matplotlib.backends.backend_pdf import PdfPages
@@ -14,7 +13,11 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Image, Table, TableStyle, Spacer, PageBreak, Flowable
+from matplotlib import cm
+import matplotlib.patheffects as path_effects
+from reportlab.lib.enums import TA_CENTER
 
 # Ajouter une image dans la sidebar
 st.sidebar.image("https://raw.githubusercontent.com/Matkermo/Average/main/doute.jpg")
@@ -48,128 +51,230 @@ def calculate_global_average(averages):
     global_average = total_result / total_global_coefficient if total_global_coefficient != 0 else 0
     return global_average
 
-def generate_pdf(global_average, averages, data):
-    # Create a temporary PDF file
-    pdf_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-    
-    # Create the main PDF document
-    doc = SimpleDocTemplate(pdf_file.name, pagesize=letter)
+# --- COULEURS EDHEC ---
+ROUGE_FONCE = "#98002e"
+ROUGE_MOYEN = "#c64e62"
+ROUGE_CLAIR = "#dfb1b6"
 
-    # Création de styles
-    styles = getSampleStyleSheet()
-    title_style = styles['Title']
-    normal_style = styles['Normal']
-    
-    # Créer un style centré
-    centered_style = ParagraphStyle('Centered', parent=normal_style, alignment=1)  # 1 pour centré
+def color_by_value_edhec(val):
+    if val >= 12:
+        return ROUGE_FONCE
+    elif val >= 10:
+        return ROUGE_MOYEN
+    else:
+        return ROUGE_CLAIR
 
-    # Création de styles
-    styles = getSampleStyleSheet()
-    title_style = styles['Title']
-    normal_style = styles['Normal']
-    
-    # Liste pour contenir le contenu
+def extract_float(v):
+    if isinstance(v, (int, float)):
+        return float(v)
+    elif isinstance(v, dict):
+        for value in v.values():
+            val = extract_float(value)
+            if val != 0.0:
+                return val
+    elif isinstance(v, (list, tuple)):
+        for item in v:
+            val = extract_float(item)
+            if val != 0.0:
+                return val
+    elif isinstance(v, str):
+        try:
+            return float(v.replace(',', '.'))
+        except Exception:
+            return 0.0
+    return 0.0
+
+# --- FONCTION POUR FAIRE UN BOXEDTITLE DONT LA LARGEUR SUIT LE TEXTE ---
+class BoxedTitleAutoWidth(Flowable):
+    """
+    Une boîte rectangulaire dont la largeur s'adapte au texte + marge, centrée
+    On fournit la largeur de la page totale pour pouvoir centrer correctement.
+    """
+    def __init__(self, text, page_width, margin_char=5, height=32, bg_color=ROUGE_CLAIR, text_color=ROUGE_FONCE, fontSize=15):
+        Flowable.__init__(self)
+        self.text = text
+        self.fontSize = fontSize
+        self.height = height
+        self.bg_color = bg_color
+        self.text_color = text_color
+        self.margin_char = margin_char
+        self.page_width = page_width
+
+    def draw(self):
+        self.canv.saveState()
+        fontName = "Helvetica-Bold"
+        self.canv.setFont(fontName, self.fontSize)
+        # largeur du texte
+        text_width = self.canv.stringWidth(self.text, fontName, self.fontSize)
+        char_approx = self.canv.stringWidth("a", fontName, self.fontSize)
+        margin_width = char_approx * self.margin_char
+        box_width = text_width + 2 * margin_width
+        # on centre la box
+        x0 = (self.page_width - box_width) / 2
+        y0 = 0
+        self.canv.setFillColor(colors.HexColor(self.bg_color))
+        self.canv.roundRect(x0, y0, box_width, self.height, radius=9, fill=1, stroke=0)
+        self.canv.setFillColor(colors.HexColor(self.text_color))
+        self.canv.drawString(x0 + margin_width, y0 + (self.height-self.fontSize)/2 + 3, self.text)
+        self.canv.restoreState()
+
+    def wrap(self, availWidth, availHeight):
+        # pour la hauteur, c'est la box. la largeur auto (toute la page, le reste sert pour centrer)
+        return self.page_width, self.height
+
+# --- FONCTION REPORTLAB COMPATIBLE POUR LE TITRE PRINCIPAL (boîte grande large) ---
+class BoxedTitleFullWidth(Flowable):
+    def __init__(self, text, width, height=38, bg_color=ROUGE_CLAIR, text_color=ROUGE_FONCE, fontSize=19):
+        Flowable.__init__(self)
+        self.text = text
+        self.width = width
+        self.height = height
+        self.bg_color = bg_color
+        self.text_color = text_color
+        self.fontSize = fontSize
+
+    def draw(self):
+        self.canv.saveState()
+        fontName = "Helvetica-Bold"
+        self.canv.setFillColor(colors.HexColor(self.bg_color))
+        self.canv.roundRect(0, 0, self.width, self.height, radius=10, fill=1, stroke=0)
+        self.canv.setFont(fontName, self.fontSize)
+        self.canv.setFillColor(colors.HexColor(self.text_color))
+        text_width = self.canv.stringWidth(self.text, fontName, self.fontSize)
+        x_text = max(0, (self.width - text_width) / 2)
+        y_text = (self.height - self.fontSize) / 2 + 3
+        self.canv.drawString(x_text, y_text, self.text)
+        self.canv.restoreState()
+    def wrap(self, availWidth, availHeight):
+        return self.width, self.height
+
+def generate_pdf(global_average, averages, data, pdf_filename="resume_resultats_edhec.pdf", logo_path=None):
+    PAGE_WIDTH, PAGE_HEIGHT = letter
+
     elements = []
+    # Titre principal : pleine largeur
+    elements.append(Spacer(1, 20))
+    elements.append(BoxedTitleFullWidth("Résumé Infographique des Moyennes & Résultats", width=PAGE_WIDTH-80, height=38, fontSize=19))
+    elements.append(Spacer(1, 8))
+    # Moyenne globale
+    elements.append(BoxedTitleAutoWidth(f"Moyenne Globale : {float(global_average):.2f}", page_width=PAGE_WIDTH-80, fontSize=15, height=32))
+    elements.append(Spacer(1, 16))
 
-    # Ajouter le titre
-    title = Paragraph("Résumé des Moyennes et Résultats", title_style)
-    elements.append(title)
+    # ==== Graphique ====
+    x_labels = list(averages.keys())
+    y_vals = [extract_float(v) for v in averages.values()]
+    colors_chart = [color_by_value_edhec(val) for val in y_vals]
 
-    # Ajouter la moyenne globale
-    global_avg_style = styles['Normal'].clone('GlobalAverage')
-    global_avg_style.fontSize += 14  # Augmente la taille de police
-    global_avg_style.alignment = 1    # Centre le texte
+    fig, ax = plt.subplots(figsize=(9, 4))
+    bars = ax.bar(x_labels, y_vals, color=colors_chart, edgecolor=ROUGE_FONCE, width=0.65)
+    ax.axhline(global_average, color=ROUGE_FONCE, linestyle='--', linewidth=1.7, alpha=0.8)
 
-    global_avg_text = f"Moyenne Globale: <b>{global_average:.2f}</b>"
-    avg_paragraph = Paragraph(global_avg_text, global_avg_style)
-    elements.append(avg_paragraph)
+    # Ajouter valeurs blanches, CENTREES DANS chaque barre
+    for bar, val in zip(bars, y_vals):
+        val_str = f"{val:.2f}" if round(val,2)!=round(val,1) else f"{val:.1f}"
+        ax.text(
+            bar.get_x() + bar.get_width()/2, bar.get_height()/2,
+            val_str,
+            ha='center', va='center',
+            color='white',
+            fontsize=13, fontweight='bold'
+        )
 
-   # Génération du graphique à barres
-    fig, ax = plt.subplots(figsize=(10, 6))  # Ajuster la taille du graphique
-    courses = list(averages.keys())
-    avg_values = [details["average"] for details in averages.values()]
-
-    # Définir des couleurs personnalisées pour les barres
-    color = '#1f77b4'  # Couleur bleu standard
-    bars = ax.bar(courses, avg_values, color=color)
-
-    # Ajouter les étiquettes de données sur les barres
-    for bar in bars:
-        yval = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width() / 2, yval + 0.2, round(yval, 2), ha='center', va='bottom', fontsize=24)  # Taille des valeurs
-
-    # Enlever les titres et axes
-    ax.set_title('', fontsize=18)  # Supprimer le titre du graphique
-    ax.set_xlabel('', fontsize=18)  # Supprimer le label de l'axe des X
-    ax.set_ylabel('', fontsize=18)  # Supprimer le label de l'axe des Y
-    ax.yaxis.grid(True)  # Afficher la grille horizontale
-
-    # Ajuster la taille des étiquettes de l'axe X
-    ax.set_xticks(range(len(courses)))  # Assurez-vous que l'axe X connaît les positions des ticks
-    ax.set_xticklabels(courses, fontsize=16)  # Augmenter la taille des étiquettes des matières
-    
-
-    # Ajouter une ligne pour la moyenne globale
-    ax.axhline(y=global_average, color='red', linestyle='--', linewidth=2)
-    ax.text(len(courses) - 1, global_average + 0.5, f'{global_average:.2f}', color='red')
-
+    # Ajout de la MOYENNE GLOBALE sur le graphique à droite du trait
+    max_idx = len(x_labels) - 1
+    max_x = bars[max_idx].get_x() + bars[max_idx].get_width()
+    ax.text(
+        len(averages) + 0.2,  # x bien à droite de la dernière barre (adapter +0.2/+0.3 selon le graph)
+        global_average,
+        f"{global_average:.2f}",
+        color=ROUGE_FONCE,
+        va='center',
+        ha='left',
+        fontweight='bold',
+        fontsize=14
+    )
+    plt.xticks(rotation=25, ha="right", fontsize=12)
+    plt.yticks(fontsize=12)
+    ax.set_title("")
+    ax.margins(y=0.18)
     plt.tight_layout()
-    chart_filename = tempfile.NamedTemporaryFile(delete=False, suffix=".png").name
-    plt.savefig(chart_filename, dpi=300)  # Enregistrer en haute résolution
-    plt.close(fig)
 
-    # Ajouter l'image du graphique au PDF
-    elements.append(Paragraph("<br/><br/>", normal_style))  # Espacement
-    elements.append(Paragraph("Graphique des Moyennes par Cours:", centered_style))  # Style centré
-    elements.append(Image(chart_filename, width=400, height=240))  # Ajuster la taille de l'image
+    # Sauvegarde le graphique temporaire
+    tempdir = tempfile.gettempdir()
+    chart_filename = os.path.join(tempdir, "chart_edhec.png")
+    plt.savefig(chart_filename, bbox_inches='tight', transparent=False)
+    plt.close()
 
-    # Ajouter les moyennes par cours
-    course_avg_data = [['Course', 'Average']]
-    for course, details in averages.items():
-        course_avg_data.append([course, f"{details['average']:.2f}"])
+    # Ajout des titres, auto-largeur & centrés
+    elements.append(BoxedTitleAutoWidth("Moyenne par Matière", page_width=PAGE_WIDTH-80, fontSize=14, height=28))
+    elements.append(Spacer(1, 5))
+    elements.append(Image(chart_filename, width=420, height=210))
+    elements.append(Spacer(1, 16))
 
-    course_table = Table(course_avg_data)
-    course_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.dodgerblue),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+    elements.append(BoxedTitleAutoWidth("Détail des Moyennes par Matière", page_width=PAGE_WIDTH-80, fontSize=13, height=25))
+    elements.append(Spacer(1, 6))
+    avg_table_data = [["Matière", "Moyenne"]]
+    for mat, val in averages.items():
+        v = extract_float(val)
+        v_str = f"{v:.2f}" if round(v,2)!=round(v,1) else f"{v:.1f}"
+        avg_table_data.append([mat, v_str])
+    avg_table = Table(avg_table_data, colWidths=[160, 90], hAlign='CENTER')
+    
+    ax.text(
+        len(averages) + 0.2, global_average,
+        f"{global_average:.2f}",
+        color=ROUGE_FONCE, va='center', ha='left', fontweight='bold', fontsize=14
+    )
+
+    avg_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(ROUGE_FONCE)),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 14),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.lightgrey),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 9),
+        ('TOPPADDING', (0, 0), (-1, 0), 3),
+        ('BACKGROUND', (0,1), (-1,-1), colors.whitesmoke),
+        ('GRID', (0,0), (-1,-1), 1, colors.black)
     ]))
-    elements.append(course_table)
+    elements.append(avg_table)
+    elements.append(Spacer(1, 28))
 
-    # Ajouter un espace entre les tableaux
-    elements.append(Paragraph("<br/><br/>", normal_style))  
-
-    # Ajouter le tableau des données
+    elements.append(PageBreak())
+    elements.append(BoxedTitleAutoWidth("Données Complètes", page_width=PAGE_WIDTH-80, fontSize=13, height=25))
+    elements.append(Spacer(1, 6))
     data_table_data = [['Matière', 'Note', 'Coefficient', 'Coef. Global']]
     for row in data:
-        data_table_data.append([row['Matière'], row['Note'], row['Coefficient'], row['Coef. Global']])
-
-    data_table = Table(data_table_data)
+        data_table_data.append([
+            row.get('Matière', ''), row.get('Note', ''), row.get('Coefficient', ''), row.get('Coef. Global', '')
+        ])
+    data_table = Table(data_table_data, colWidths=[130, 70, 70, 100])
     data_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.dodgerblue),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(ROUGE_FONCE)),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 14),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.lightgrey),
+        ('FONTSIZE', (0, 0), (-1, 0), 13),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('TOPPADDING', (0, 0), (-1, 0), 3),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.whitesmoke),
         ('GRID', (0, 0), (-1, -1), 1, colors.black)
     ]))
     elements.append(data_table)
+    elements.append(Spacer(1, 12))
 
-    # Construire le PDF
+    pdf_path = os.path.join(os.getcwd(), pdf_filename)
+    doc = SimpleDocTemplate(pdf_path, pagesize=letter, leftMargin=40, rightMargin=40)
     doc.build(elements)
+
+    # Supprimer fichier temporaire
+    try:
+        os.remove(chart_filename)
+    except Exception:
+        pass
+
+    return pdf_path
     
-    # Nettoyer le fichier image temporaire
-    os.remove(chart_filename)
-
-    return pdf_file.name  # Retourne le chemin du PDF généré
-
 def main():
     st.markdown(
     """
