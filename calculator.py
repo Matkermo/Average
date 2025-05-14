@@ -660,8 +660,9 @@ def main():
         if 'courses' in st.session_state:
             courses = st.session_state.courses
 
-            # Affichage de la moyenne générale
-            global_average = calculate_global_average(calculate_average(courses))
+            # Calcul et affichage de la moyenne générale
+            averages = calculate_average(courses)
+            global_average = calculate_global_average(averages)
             color = "red" if global_average < 10 else "orange" if global_average < 12 else "green"
 
             st.markdown(f"""
@@ -671,57 +672,53 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
 
-            data = []
-            for course, grades in courses.items():
-                for result, coefficient, global_coefficient in grades:
-                    data.append({
-                        "Matière": course,
-                        "Note": round(result, 1),             # Arrondi à 1 chiffre après la virgule
-                        "Coefficient": round(coefficient, 0),  # Arrondi à 0 chiffre après la virgule
-                        "Coef. Global": round(global_coefficient, 1)  # Arrondi à 1 chiffre après la virgule
-                    })
+            # Nouveau tableau synthétique
+            st.subheader(titles[lang_code]["summary_title"])
 
-            df = pd.DataFrame(data)
-            df = df[['Matière', 'Note', 'Coefficient', 'Coef. Global']]
+            summary_df = pd.DataFrame({
+                'Matière': averages.keys(),
+                'Moyenne': [avg["average"] for avg in averages.values()],
+                'Coefficient global': [avg["global_coefficient"] for avg in averages.values()]
+            })
 
-            # Styler pour le DataFrame
-            styled_df = df.style \
+            def colorize(val):
+                return get_average_color(val)
+
+            styled_summary = summary_df.style\
+                .applymap(colorize, subset=['Moyenne'])\
+                .format({
+                    "Moyenne": "{:.1f}",
+                    "Coefficient global": "{:.1f}"
+                })\
                 .set_table_styles([
                     {'selector': 'thead th', 'props': [('text-align', 'center')]},
                     {'selector': 'tbody tr:hover', 'props': [('background-color', '#e6f3ff')]}
-                ]) \
-                .set_properties(subset=["Matière"], **{'text-align': 'left'}) \
-                .set_properties(subset=["Note", "Coef. Global", "Coefficient"], **{'text-align': 'center'}) \
-                .format({
-                    "Note": "{:.1f}", 
-                    "Coefficient": "{:.0f}",  # Format à 0 chiffre après la virgule
-                    "Coef. Global": "{:.1f}"
-                })
+                ])\
+                .set_properties(subset=["Matière"], **{'text-align': 'left'})\
+                .set_properties(subset=["Moyenne", "Coefficient global"], **{'text-align': 'center'})
 
-            # Affichage du tableau sans balises de fermeture superflues
             st.markdown(
                 f"""
                 <div style="display: flex; justify-content: center;">
                     <div style="width: fit-content;">
-                        {styled_df.to_html(escape=False)}
+                        {styled_summary.to_html(escape=False)}
                 """,
                 unsafe_allow_html=True
             )
 
+            # Bouton de téléchargement du PDF
             if st.button("📥 Télécharger le résumé", key="long_button", help="Cliquez ici pour télécharger votre résumé"):
                 if 'courses' in st.session_state:
                     averages = calculate_average(st.session_state.courses)
                     global_average = calculate_global_average(averages)
 
                     data = []
-                    for course, grades in st.session_state.courses.items():
-                        for result, coefficient, global_coefficient in grades:
-                            data.append({
-                                "Matière": course,
-                                "Note": round(result, 1),             # Arrondi à 1 chiffre après la virgule
-                                "Coefficient": round(coefficient, 0),  # Arrondi à 0 chiffre après la virgule
-                                "Coef. Global": round(global_coefficient, 1)  # Arrondi à 1 chiffre après la virgule
-                            })
+                    for course, avg in averages.items():
+                        data.append({
+                            "Matière": course,
+                            "Moyenne": round(avg["average"], 1),
+                            "Coefficient global": round(avg["global_coefficient"], 1)
+                        })
 
                     pdf_path = generate_pdf(global_average, averages, data)
 
@@ -742,7 +739,6 @@ def main():
 
         else:
             st.info("ℹ️ Aucune donnée chargée. Veuillez importer un fichier dans l'onglet 'Tableau de bord'.")
-
 
 if __name__ == '__main__':
     main()
