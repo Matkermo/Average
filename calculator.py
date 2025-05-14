@@ -18,6 +18,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Image, Table, Table
 from matplotlib import cm
 import matplotlib.patheffects as path_effects
 from reportlab.lib.enums import TA_CENTER
+import requests
 
 # Ajouter une image dans la sidebar
 st.sidebar.image("https://raw.githubusercontent.com/Matkermo/Average/main/doute.jpg")
@@ -147,19 +148,67 @@ class BoxedTitleFullWidth(Flowable):
         self.canv.restoreState()
     def wrap(self, availWidth, availHeight):
         return self.width, self.height
+# Fonction pour dessiner le logo sur la première page
+def draw_header_with_logo(canvas, doc, logo_url):
+    try:
+        response = requests.get(logo_url)
+        img_data = BytesIO(response.content)
+        logo_width, logo_height = 100, 50
+        x_position = doc.pagesize[0] - logo_width - 40
+        y_position = doc.pagesize[1] - logo_height - 20
+        canvas.drawImage(img_data, x_position, y_position, width=logo_width, height=logo_height, mask='auto')
+    except Exception as e:
+        print("Erreur de chargement du logo :", e)
 
-def generate_pdf(global_average, averages, data, pdf_filename="resume_resultats_edhec.pdf", logo_path=None):
+def generate_pdf(global_average, averages, data, pdf_filename="resume_resultats_edhec.pdf"):
     PAGE_WIDTH, PAGE_HEIGHT = letter
-
     elements = []
-    # Titre principal : pleine largeur
+
+    # Titre principal
     elements.append(Spacer(1, 20))
     elements.append(BoxedTitleFullWidth("Résumé Infographique des Moyennes & Résultats", width=PAGE_WIDTH-80, height=38, fontSize=19))
     elements.append(Spacer(1, 8))
-    # Moyenne globale
     elements.append(BoxedTitleAutoWidth(f"Moyenne Globale : {float(global_average):.2f}", page_width=PAGE_WIDTH-80, fontSize=15, height=32))
     elements.append(Spacer(1, 16))
 
+    # 1. Télécharger le logo depuis l'URL *brute* de GitHub
+    logo_url = "https://raw.githubusercontent.com/Matkermo/Average/main/pngegg.png"
+    response = requests.get(logo_url)
+    if response.status_code == 200:
+        image_data = BytesIO(response.content)
+        logo = Image(image_data, width=160, height=90)
+    else:
+        logo = Paragraph("EDHEC", ParagraphStyle(name='LogoFallback', fontSize=20))
+
+    # 2. Définir la mention non officielle à droite
+    style_non_off = ParagraphStyle(
+        name='NonOff',
+        fontSize=14,
+        textColor='#911A20',
+        alignment=2,  # à droite
+        fontName='Helvetica-Bold'
+    )
+    non_off_1 = Paragraph('!!! Attention Non officiel EDHEC !!!', style=style_non_off)
+    non_off_2 = Paragraph('!!! Résultats informatifs uniquement !!!', style=style_non_off)
+
+
+    # 3. Créer une table pour aligner logo à gauche et mention à droite
+    header_table = Table(
+        [[logo, [non_off_1, non_off_2]]],    # liste de Paragraphs dans la même cellule[logo, non_off]],
+        colWidths=[90, 390],  # Ajuste 390 selon ta largeur de page !
+        hAlign='LEFT',
+        style=TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('ALIGN', (0,0), (0,0), 'LEFT'),
+            ('ALIGN', (1,0), (1,0), 'RIGHT'),
+            # Pas de bordure ni background
+        ])
+    )
+
+    # 4. Ajoute le header en haut de ta liste d'éléments ReportLab
+    elements.insert(0, Spacer(1, 5))
+    elements.insert(1, header_table)
+    elements.insert(2, Spacer(1, 14))
     # ==== Graphique ====
     x_labels = list(averages.keys())
     y_vals = [extract_float(v) for v in averages.values()]
@@ -169,63 +218,42 @@ def generate_pdf(global_average, averages, data, pdf_filename="resume_resultats_
     bars = ax.bar(x_labels, y_vals, color=colors_chart, edgecolor=ROUGE_FONCE, width=0.65)
     ax.axhline(global_average, color=ROUGE_FONCE, linestyle='--', linewidth=1.7, alpha=0.8)
 
-    # Ajouter valeurs blanches, CENTREES DANS chaque barre
     for bar, val in zip(bars, y_vals):
-        val_str = f"{val:.2f}" if round(val,2)!=round(val,1) else f"{val:.1f}"
-        ax.text(
-            bar.get_x() + bar.get_width()/2, bar.get_height()/2,
-            val_str,
-            ha='center', va='center',
-            color='white',
-            fontsize=13, fontweight='bold'
-        )
+        val_str = f"{val:.2f}" if round(val, 2) != round(val, 1) else f"{val:.1f}"
+        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height()/2, val_str,
+                ha='center', va='center', color='white', fontsize=13, fontweight='bold')
 
-    # Ajout de la MOYENNE GLOBALE sur le graphique à droite du trait
     max_idx = len(x_labels) - 1
     max_x = bars[max_idx].get_x() + bars[max_idx].get_width()
-    ax.text(
-        len(averages) + 0.2,  # x bien à droite de la dernière barre (adapter +0.2/+0.3 selon le graph)
-        global_average,
-        f"{global_average:.2f}",
-        color=ROUGE_FONCE,
-        va='center',
-        ha='left',
-        fontweight='bold',
-        fontsize=14
-    )
+    ax.text(len(averages) + 0.2, global_average, f"{global_average:.2f}",
+            color=ROUGE_FONCE, va='center', ha='left', fontweight='bold', fontsize=14)
+
     plt.xticks(rotation=25, ha="right", fontsize=12)
     plt.yticks(fontsize=12)
-    ax.set_title("")
     ax.margins(y=0.18)
     plt.tight_layout()
 
-    # Sauvegarde le graphique temporaire
     tempdir = tempfile.gettempdir()
     chart_filename = os.path.join(tempdir, "chart_edhec.png")
     plt.savefig(chart_filename, bbox_inches='tight', transparent=False)
     plt.close()
 
-    # Ajout des titres, auto-largeur & centrés
+    # Graphique dans le PDF
     elements.append(BoxedTitleAutoWidth("Moyenne par Matière", page_width=PAGE_WIDTH-80, fontSize=14, height=28))
     elements.append(Spacer(1, 5))
     elements.append(Image(chart_filename, width=420, height=210))
     elements.append(Spacer(1, 16))
 
+    # Tableau des moyennes
     elements.append(BoxedTitleAutoWidth("Détail des Moyennes par Matière", page_width=PAGE_WIDTH-80, fontSize=13, height=25))
     elements.append(Spacer(1, 6))
     avg_table_data = [["Matière", "Moyenne"]]
     for mat, val in averages.items():
         v = extract_float(val)
-        v_str = f"{v:.2f}" if round(v,2)!=round(v,1) else f"{v:.1f}"
+        v_str = f"{v:.2f}" if round(v, 2) != round(v, 1) else f"{v:.1f}"
         avg_table_data.append([mat, v_str])
-    avg_table = Table(avg_table_data, colWidths=[160, 90], hAlign='CENTER')
-    
-    ax.text(
-        len(averages) + 0.2, global_average,
-        f"{global_average:.2f}",
-        color=ROUGE_FONCE, va='center', ha='left', fontweight='bold', fontsize=14
-    )
 
+    avg_table = Table(avg_table_data, colWidths=[160, 90], hAlign='CENTER')
     avg_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(ROUGE_FONCE)),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
@@ -234,12 +262,13 @@ def generate_pdf(global_average, averages, data, pdf_filename="resume_resultats_
         ('FONTSIZE', (0, 0), (-1, 0), 12),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 9),
         ('TOPPADDING', (0, 0), (-1, 0), 3),
-        ('BACKGROUND', (0,1), (-1,-1), colors.whitesmoke),
-        ('GRID', (0,0), (-1,-1), 1, colors.black)
+        ('BACKGROUND', (0, 1), (-1, -1), colors.whitesmoke),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
     ]))
     elements.append(avg_table)
     elements.append(Spacer(1, 28))
 
+    # Deuxième page : données complètes
     elements.append(PageBreak())
     elements.append(BoxedTitleAutoWidth("Données Complètes", page_width=PAGE_WIDTH-80, fontSize=13, height=25))
     elements.append(Spacer(1, 6))
@@ -264,10 +293,12 @@ def generate_pdf(global_average, averages, data, pdf_filename="resume_resultats_
     elements.append(Spacer(1, 12))
 
     pdf_path = os.path.join(os.getcwd(), pdf_filename)
+    logo_url = "https://raw.githubusercontent.com/Matkermo/Average/main/pngegg.png"
     doc = SimpleDocTemplate(pdf_path, pagesize=letter, leftMargin=40, rightMargin=40)
-    doc.build(elements)
 
-    # Supprimer fichier temporaire
+    # Ajout du logo uniquement sur la première page
+    doc.build(elements, onFirstPage=lambda canvas, doc: draw_header_with_logo(canvas, doc, logo_url))
+
     try:
         os.remove(chart_filename)
     except Exception:
@@ -346,7 +377,7 @@ def main():
    
     titles = {
         "fr": {
-            "title": "👩‍🎓 Application de calcul de moyenne 🧑‍🎓",
+            "title": "👩‍🎓 test Application de calcul de moyenne 🧑‍🎓",
             "import_data": "📥 Importer des données",
             "global_average": "Moyenne générale",
             "dashboard": "📊 synthèse globale ",
