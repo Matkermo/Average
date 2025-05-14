@@ -41,14 +41,14 @@ st.sidebar.markdown(
             font-size: 13px;
             font-family: Helvetica, Arial, sans-serif;
             font-weight: bold;
-            text-align: right;
+            text-align: center;
             line-height: 1.3;
             margin-top: 0px;
             margin-bottom: 10px;
             word-break: break-word;
         '>
             !!!Attention Non officiel EDHEC !!!<br>
-            !!! Résultats donnés à titre informatif uniquement !!!
+            !!! Résultats informatifs uniquement !!!
         </div>
     </div>
     """,
