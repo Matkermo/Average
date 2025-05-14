@@ -20,8 +20,40 @@ import matplotlib.patheffects as path_effects
 from reportlab.lib.enums import TA_CENTER
 import requests
 
-# Ajouter une image dans la sidebar
-st.sidebar.image("https://raw.githubusercontent.com/Matkermo/Average/main/doute.jpg")
+st.sidebar.markdown(
+    """
+    <style>
+    .img-alert-container img {
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+        display: block;
+        line-height: 0 !important;
+    }
+    .img-alert-container div {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+    </style>
+    <div class="img-alert-container" style="text-align:center; line-height:0;">
+        <img src="https://raw.githubusercontent.com/Matkermo/Average/main/pngegg.png" style="max-width:100%; margin-bottom:0;">
+        <div style='
+            color: #911A20;
+            font-size: 13px;
+            font-family: Helvetica, Arial, sans-serif;
+            font-weight: bold;
+            text-align: right;
+            line-height: 1.3;
+            margin-top: 0px;
+            margin-bottom: 10px;
+            word-break: break-word;
+        '>
+            !!!Attention Non officiel EDHEC !!!<br>
+            !!! Résultats donnés à titre informatif uniquement !!!
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 
 def get_average_color(average):
