@@ -20,40 +20,6 @@ import matplotlib.patheffects as path_effects
 from reportlab.lib.enums import TA_CENTER
 import requests
 
-st.sidebar.markdown(
-    """
-    <style>
-    .img-alert-container img {
-        margin-bottom: 0 !important;
-        padding-bottom: 0 !important;
-        display: block;
-        line-height: 0 !important;
-    }
-    .img-alert-container div {
-        margin-top: 0 !important;
-        padding-top: 0 !important;
-    }
-    </style>
-    <div class="img-alert-container" style="text-align:center; line-height:0;">
-        <img src="https://raw.githubusercontent.com/Matkermo/Average/main/pngegg.png" style="max-width:100%; margin-bottom:0;">
-        <div style='
-            color: #911A20;
-            font-size: 13px;
-            font-family: Helvetica, Arial, sans-serif;
-            font-weight: bold;
-            text-align: center;
-            line-height: 1.3;
-            margin-top: 0px;
-            margin-bottom: 10px;
-            word-break: break-word;
-        '>
-            !!!Attention Non officiel EDHEC !!!<br>
-            !!! Résultats informatifs uniquement !!!
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
 
 
 def get_average_color(average):
@@ -339,123 +305,145 @@ def generate_pdf(global_average, averages, data, pdf_filename="resume_resultats_
     return pdf_path
     
 def main():
+    # ----- CSS global -----
     st.markdown(
-    """
-    <style>
-    /* Sidebar Styles pour iPad/tablette - Overlay devant le contenu */
-    [data-testid="stSidebar"] {
-        z-index: 2000 !important;
-        position: fixed !important;
-        background: #fff !important;
-        box-shadow: 0 0 15px rgba(0,0,0,0.08);
-    }
-    [data-testid="stSidebar"] > div {
-        overflow-y: auto;
-        height: 100vh;
-    }
-    /* Ajuste la largeur sur tablette */
-    @media (max-width: 991px) {
+        """
+        <style>
+        /* Sidebar Styles pour iPad/tablette - Overlay devant le contenu */
         [data-testid="stSidebar"] {
-            width: 200px !important;
-            min-width: 150px !important;
+            z-index: 2000 !important;
+            position: fixed !important;
+            background: #fff !important;
+            box-shadow: 0 0 15px rgba(0,0,0,0.08);
         }
-    }
-
-    .stSidebar > div:first-child {
-        border-radius: 8px;
-    }
-    /* Bordures sur le contenu de la sidebar */
-    .sidebar .sidebar-content {
-        border: 1px solid rgba(0, 0, 0, 0.2);
-        border-radius: 8px;
-        padding: 10px;
-        margin-bottom: 20px;
-    }
-
-    /* Touche pas aux boutons Upload, etc */
-    [data-baseweb="select"] {
-        border: 1px solid rgba(0, 0, 0, 0.2);
-        border-radius: 8px;
-        padding: 0px;
-    }
-    /* Modifier la couleur de la zone de dépôt */
-    section[data-testid="stFileUploaderDropzone"] {
-        background-color: #f7f7f7; /* Gris très clair */
-        border: 1px solid rgba(0, 0, 0, 0.2);
-        border-radius: 8px;
-        padding: 10px;
-    }
-    /* Modifier l'apparence du sélecteur de langue */
-    div[data-baseweb="select"] > div {
-        background-color: #f7f7f7; /* Gris très clair */
-    }
-    /* Centrer l'image dans la sidebar */
-    [data-testid="stSidebar"] img {
-        display: block;
-        margin: 0 auto;
-        max-width: 100%;
-        height: auto;
-    }
-    button[kind="header"][aria-expanded="true"] > div:nth-child(1) > div > svg {
-    transform: rotate(180deg);
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
+        [data-testid="stSidebar"] > div {
+            overflow-y: auto;
+            height: 100vh;
+        }
+        @media (max-width: 991px) {
+            [data-testid="stSidebar"] {
+                width: 200px !important;
+                min-width: 150px !important;
+            }
+        }
+        .stSidebar > div:first-child {
+            border-radius: 8px;
+        }
+        .sidebar .sidebar-content {
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        [data-baseweb="select"] {
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 0px;
+        }
+        section[data-testid="stFileUploaderDropzone"] {
+            background-color: #f7f7f7;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+        }
+        div[data-baseweb="select"] > div {
+            background-color: #f7f7f7;
+        }
+        [data-testid="stSidebar"] img {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+            height: auto;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
     )
-    # Langue
-    language = st.sidebar.selectbox("", options=["Français 🇫🇷", "Anglais 🇺🇸"])
-    lang_code = "fr" if "Français" in language else "en"
-   
-    titles = {
-        "fr": {
-            "title": "👩‍🎓 test Application de calcul de moyenne 🧑‍🎓",
-            "import_data": "📥 Importer des données",
-            "global_average": "Moyenne générale",
-            "dashboard": "📊 synthèse globale ",
-            "full_synthesis": "📋 Détails par Matière",
-            "download": "✏️ télécharger les résultats",
-            "success_message": "✅ Fichier chargé avec succès!",
-            "graph_title": "📊 Visualisation des résultats",
-            "summary_graph_title": "📊 Synthèse graphique",
-            "summary_title": "📝 Synthèse par matière",
-            "complete_detail_title": "🧮 Détail complet des notes",
-            #"update_button": "🔄 Mettre à jour les données",
-            #"alert_message": "⚠️ Attention : Toute modification sera appliquée après avoir cliqué sur 'Mettre à jour les données'", supprimé temporairement
-            "example_download": "📤 Télécharger un fichier exemple",
-            "title_download_sample": "📤 Exemple de fichier",
-            "note": "Note",
-            "coefficient": "Coefficient",
-            "global_coefficient": "Coef. Global"
-        },
-        "en": {
-            "title": "👩‍🎓 Average Calculation App 🧑‍🎓 ",
-            "import_data": "📥 Import Data",
-            "global_average": "General Average",
-            "dashboard": "📊 Dashboard",
-            "full_synthesis": "📋 Courses Details",
-            "download": "✏️ Download résultats",
-            "success_message": "✅ File loaded successfully!",
-            "graph_title": "📊 Visualization of Results",
-            "summary_graph_title": "📊 Graphical Summary",
-            "summary_title": "📝 Subject Summary",
-            "complete_detail_title": "🧮 Detailed Scores",
-            #"update_button": "🔄 Update Data",
-            #"alert_message": "⚠️ Attention: Any changes will be applied after clicking 'Update Data'",
-            "title_download_sample": "📤 Download a file",
-            "example_download": "📤 Download example file",
-            "note": "Note",
-            "coefficient": "Coefficient",
-            "global_coefficient": "Global Coefficient"
-        }
-    }
-    # Centre le titre
-    st.markdown(f"<h1 style='text-align: center;'>{titles[lang_code]['title']}</h1>", unsafe_allow_html=True)
 
-    # Section importation de fichiers dans la sidebar
     with st.sidebar:
+        # 1. IMAGE tout en haut
+        st.markdown(
+            """
+            <div style="text-align:center;">
+                <img src="https://raw.githubusercontent.com/Matkermo/Average/main/pngegg.png"
+                    style="max-width:100%; margin-bottom: 0;">
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # 2. Sélecteur de langue
+        language = st.selectbox("", options=["Français 🇫🇷", "Anglais 🇺🇸"])
+        lang_code = "fr" if "Français" in language else "en"
+
+        # 3. Traductions
+        titles = {
+            "fr": {
+                "title": "👩‍🎓 Application de calcul de moyenne 🧑‍🎓",
+                "import_data": "📥 Importer des données",
+                "global_average": "Moyenne générale",
+                "dashboard": "📊 Synthèse globale ",
+                "full_synthesis": "📋 Détails par Matière",
+                "download": "✏️ Télécharger les résultats",
+                "success_message": "✅ Fichier chargé avec succès!",
+                "graph_title": "📊 Visualisation des résultats",
+                "summary_graph_title": "📊 Synthèse graphique",
+                "summary_title": "📝 Synthèse par matière",
+                "complete_detail_title": "🧮 Détail complet des notes",
+                "example_download": "📤 Télécharger un fichier exemple",
+                "title_download_sample": "📤 Exemple de fichier",
+                "note": "Note",
+                "coefficient": "Coefficient",
+                "global_coefficient": "Coef. Global",
+                "sidebar_warning": "⚠️Avertissement : non officiel, à titre informatif uniquement ⚠️"
+            },
+            "en": {
+                "title": "👩‍🎓 Average Calculation App 🧑‍🎓 ",
+                "import_data": "📥 Import Data",
+                "global_average": "General Average",
+                "dashboard": "📊 Dashboard",
+                "full_synthesis": "📋 Courses Details",
+                "download": "✏️ Download results",
+                "success_message": "✅ File loaded successfully!",
+                "graph_title": "📊 Visualization of Results",
+                "summary_graph_title": "📊 Graphical Summary",
+                "summary_title": "📝 Subject Summary",
+                "complete_detail_title": "🧮 Detailed Scores",
+                "title_download_sample": "📤 Sample file",
+                "example_download": "📤 Download example file",
+                "note": "Grade",
+                "coefficient": "Coefficient",
+                "global_coefficient": "Global Coefficient",
+                "sidebar_warning": "⚠️ Warning: unofficial, for informational purposes only ⚠️"
+            }
+        }
+
+        # 4. Texte warning
+        st.markdown(
+            f"""
+            <div style='
+                    color: #911A20;
+                    font-size: 13px;
+                    font-family: Helvetica, Arial, sans-serif;
+                    font-weight: bold;
+                    text-align: center;
+                    margin-bottom: 14px;
+                    margin-top: 6px;
+                    word-break: break-word;
+            '>
+                {titles[lang_code]["sidebar_warning"]}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # 5. Import du fichier
         st.subheader(titles[lang_code]["import_data"])
-        uploaded_file = st.file_uploader("Choisissez un fichier Excel", type=["xlsx"], label_visibility="collapsed")
+        uploaded_file = st.file_uploader(
+            "Choisissez un fichier Excel",
+            type=["xlsx"],
+            label_visibility="collapsed"
+        )
         if uploaded_file is not None:
             try:
                 df = pd.read_excel(uploaded_file)
@@ -471,9 +459,9 @@ def main():
                 st.session_state.courses = courses
                 st.success(titles[lang_code]["success_message"])
             except Exception as e:
-                st.error(f"❌ Erreur lors de la lecture du fichier : {e}")
+                st.error(f"❌ Erreur lors de la lecture du fichier : {e}" if lang_code == "fr" else f"❌ Error reading the file: {e}")
 
-        # Fichier exemple
+        # 6. Exemple de fichier (en bas)
         st.subheader(titles[lang_code]["title_download_sample"])
         exemple_data = {
             "Course": ["Math", "Math", "Math", "Français", "Français", "Anglais"],
@@ -489,7 +477,7 @@ def main():
             label=titles[lang_code]["example_download"],
             data=towrite,
             file_name="exemple_moyennes.xlsx",
-            help="Téléchargez un exemple de fichier Excel à remplir"
+            help="Téléchargez un exemple de fichier Excel à remplir" if lang_code == "fr" else "Download a sample Excel file"
         )
 
     # Création des onglets
