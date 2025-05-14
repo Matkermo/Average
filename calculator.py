@@ -169,7 +169,7 @@ def generate_pdf(global_average, averages, data, pdf_filename="resume_resultats_
     elements.append(BoxedTitleAutoWidth(f"Moyenne Globale : {float(global_average):.2f}", page_width=PAGE_WIDTH-80, fontSize=15, height=32))
     elements.append(Spacer(1, 16))
 
-    # 1. Télécharger le logo depuis l'URL *brute* de GitHub
+    # Logo
     logo_url = "https://raw.githubusercontent.com/Matkermo/Average/main/pngegg.png"
     response = requests.get(logo_url)
     if response.status_code == 200:
@@ -178,35 +178,30 @@ def generate_pdf(global_average, averages, data, pdf_filename="resume_resultats_
     else:
         logo = Paragraph("EDHEC", ParagraphStyle(name='LogoFallback', fontSize=20))
 
-    # 2. Définir la mention non officielle à droite
     style_non_off = ParagraphStyle(
         name='NonOff',
         fontSize=14,
         textColor='#911A20',
-        alignment=2,  # à droite
+        alignment=2,
         fontName='Helvetica-Bold'
     )
     non_off_1 = Paragraph('!!! Attention Non officiel EDHEC !!!', style=style_non_off)
     non_off_2 = Paragraph('!!! Résultats informatifs uniquement !!!', style=style_non_off)
-
-
-    # 3. Créer une table pour aligner logo à gauche et mention à droite
     header_table = Table(
-        [[logo, [non_off_1, non_off_2]]],    # liste de Paragraphs dans la même cellule[logo, non_off]],
-        colWidths=[90, 390],  # Ajuste 390 selon ta largeur de page !
+        [[logo, [non_off_1, non_off_2]]],
+        colWidths=[90, 390],
         hAlign='LEFT',
         style=TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('ALIGN', (0,0), (0,0), 'LEFT'),
             ('ALIGN', (1,0), (1,0), 'RIGHT'),
-            # Pas de bordure ni background
         ])
     )
 
-    # 4. Ajoute le header en haut de ta liste d'éléments ReportLab
     elements.insert(0, Spacer(1, 5))
     elements.insert(1, header_table)
     elements.insert(2, Spacer(1, 14))
+
     # ==== Graphique ====
     x_labels = list(averages.keys())
     y_vals = [extract_float(v) for v in averages.values()]
@@ -215,11 +210,9 @@ def generate_pdf(global_average, averages, data, pdf_filename="resume_resultats_
     fig, ax = plt.subplots(figsize=(9, 4))
     bars = ax.bar(x_labels, y_vals, color=colors_chart, edgecolor=ROUGE_FONCE, width=0.65)
     ax.axhline(global_average, color=ROUGE_FONCE, linestyle='--', linewidth=1.7, alpha=0.8)
-
     for bar, val in zip(bars, y_vals):
         val_str = f"{val:.2f}" if round(val, 2) != round(val, 1) else f"{val:.1f}"
-        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height()/2, val_str,
-                ha='center', va='center', color='white', fontsize=13, fontweight='bold')
+        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height()/2, val_str, ha='center', va='center', color='white', fontsize=13, fontweight='bold')
 
     max_idx = len(x_labels) - 1
     max_x = bars[max_idx].get_x() + bars[max_idx].get_width()
@@ -231,78 +224,60 @@ def generate_pdf(global_average, averages, data, pdf_filename="resume_resultats_
     ax.margins(y=0.18)
     plt.tight_layout()
 
+    # Graphique temporaire sur disque (obligé avec reportlab)
     tempdir = tempfile.gettempdir()
     chart_filename = os.path.join(tempdir, "chart_edhec.png")
     plt.savefig(chart_filename, bbox_inches='tight', transparent=False)
     plt.close()
 
-    # Graphique dans le PDF
     elements.append(BoxedTitleAutoWidth("Moyenne par Matière", page_width=PAGE_WIDTH-80, fontSize=14, height=28))
     elements.append(Spacer(1, 5))
     elements.append(Image(chart_filename, width=420, height=210))
     elements.append(Spacer(1, 16))
 
-    # Tableau des moyennes
-    elements.append(BoxedTitleAutoWidth("Détail des Moyennes par Matière", page_width=PAGE_WIDTH-80, fontSize=13, height=25))
-    elements.append(Spacer(1, 6))
+     # --- Tableau des moyennes (compact) ---
+    elements.append(BoxedTitleAutoWidth("Détail des Moyennes par Matière", page_width=PAGE_WIDTH-80, fontSize=11, height=20))
+    elements.append(Spacer(1, 2))
     avg_table_data = [["Matière", "Moyenne"]]
     for mat, val in averages.items():
         v = extract_float(val)
         v_str = f"{v:.2f}" if round(v, 2) != round(v, 1) else f"{v:.1f}"
         avg_table_data.append([mat, v_str])
 
-    avg_table = Table(avg_table_data, colWidths=[160, 90], hAlign='CENTER')
+    avg_table = Table(avg_table_data, colWidths=[120, 60], hAlign='CENTER')
     avg_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(ROUGE_FONCE)),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 12),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 9),
-        ('TOPPADDING', (0, 0), (-1, 0), 3),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 5),
+        ('TOPPADDING', (0, 0), (-1, 0), 2),
         ('BACKGROUND', (0, 1), (-1, -1), colors.whitesmoke),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
     ]))
     elements.append(avg_table)
-    elements.append(Spacer(1, 28))
+    elements.append(Spacer(1, 8))
 
-    # Deuxième page : données complètes
-    elements.append(PageBreak())
-    elements.append(BoxedTitleAutoWidth("Données Complètes", page_width=PAGE_WIDTH-80, fontSize=13, height=25))
-    elements.append(Spacer(1, 6))
-    data_table_data = [['Matière', 'Note', 'Coefficient', 'Coef. Global']]
-    for row in data:
-        data_table_data.append([
-            row.get('Matière', ''), row.get('Note', ''), row.get('Coefficient', ''), row.get('Coef. Global', '')
-        ])
-    data_table = Table(data_table_data, colWidths=[130, 70, 70, 100])
-    data_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(ROUGE_FONCE)),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 13),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-        ('TOPPADDING', (0, 0), (-1, 0), 3),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.whitesmoke),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
-    ]))
-    elements.append(data_table)
-    elements.append(Spacer(1, 12))
-
-    pdf_path = os.path.join(os.getcwd(), pdf_filename)
-    logo_url = "https://raw.githubusercontent.com/Matkermo/Average/main/pngegg.png"
-    doc = SimpleDocTemplate(pdf_path, pagesize=letter, leftMargin=40, rightMargin=40)
-
-    # Ajout du logo uniquement sur la première page
-    doc.build(elements, onFirstPage=lambda canvas, doc: draw_header_with_logo(canvas, doc, logo_url))
+    # ----- GESTION SORTIE PDF : disque ou mémoire -----
+    if hasattr(pdf_filename, "write"):
+        # Mémoire (BytesIO) pour Streamlit
+        doc = SimpleDocTemplate(pdf_filename, pagesize=letter, leftMargin=40, rightMargin=40)
+        doc.build(elements, onFirstPage=lambda canvas, doc: draw_header_with_logo(canvas, doc, logo_url))
+        result = pdf_filename
+    else:
+        # Disque
+        pdf_path = os.path.join(os.getcwd(), pdf_filename)
+        doc = SimpleDocTemplate(pdf_path, pagesize=letter, leftMargin=40, rightMargin=40)
+        doc.build(elements, onFirstPage=lambda canvas, doc: draw_header_with_logo(canvas, doc, logo_url))
+        result = pdf_path
 
     try:
         os.remove(chart_filename)
     except Exception:
         pass
 
-    return pdf_path
+    return result
     
 def main():
     # ----- CSS global -----
@@ -695,23 +670,31 @@ def main():
             )
 
             # Bouton de téléchargement du PDF
-            if st.button("📥 Télécharger le résumé", key="long_button", help="Cliquez ici pour télécharger votre résumé"):
-                if 'courses' in st.session_state:
-                    averages = calculate_average(st.session_state.courses)
-                    global_average = calculate_global_average(averages)
+            # Création de deux colonnes pour placer deux boutons côte à côte
+            col0, col1, col2 = st.columns([0.70, 1, 1.4])  # [espace, bouton1, bouton2]
 
-                    data = []
-                    for course, avg in averages.items():
-                        data.append({
-                            "Matière": course,
-                            "Moyenne": round(avg["average"], 1),
-                            "Coefficient global": round(avg["global_coefficient"], 1)
-                        })
+            with col1:
+                if st.button("📥 Générer un résumé", key="long_button", help="Cliquez ici pour télécharger votre résumé"):
+                    if 'courses' in st.session_state:
+                        averages = calculate_average(st.session_state.courses)
+                        global_average = calculate_global_average(averages)
 
-                    pdf_path = generate_pdf(global_average, averages, data)
+                        data = []
+                        for course, avg in averages.items():
+                            data.append({
+                                "Matière": course,
+                                "Moyenne": round(avg["average"], 1),
+                                "Coefficient global": round(avg["global_coefficient"], 1)
+                            })
 
-                    # Fournir un bouton de téléchargement pour le PDF généré
-                    with open(pdf_path, "rb") as f:
+                        pdf_path = generate_pdf(global_average, averages, data)
+                        st.session_state['pdf_path'] = pdf_path  # stocke le chemin pour la session
+                    else:
+                        st.warning("📋 Aucune donnée à inclure dans le PDF. Veuillez importer des cours.")
+
+            with col2:
+                if 'pdf_path' in st.session_state and os.path.exists(st.session_state['pdf_path']):
+                    with open(st.session_state['pdf_path'], "rb") as f:
                         st.download_button(
                             label="Télécharger le PDF",
                             data=f,
@@ -719,14 +702,6 @@ def main():
                             mime="application/pdf",
                             help="Téléchargez votre résumé en PDF"
                         )
-
-                    # Nettoyage après le téléchargement
-                    os.remove(pdf_path)
-                else:
-                    st.warning("📋 Aucune donnée à inclure dans le PDF. Veuillez importer des cours.")
-
-        else:
-            st.info("ℹ️ Aucune donnée chargée. Veuillez importer un fichier dans l'onglet 'Tableau de bord'.")
 
 if __name__ == '__main__':
     main()
