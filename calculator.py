@@ -528,7 +528,7 @@ def main():
                     "Coefficient global": "{:.1f}"
                 })\
                 .set_table_styles([
-                    {'selector': 'thead th', 'props': [('text-align', 'center')]},
+                    {'selector': 'thead th', 'props': [('background-color', '#911A20'), ('color', 'white')]},
                     {'selector': 'tbody tr:hover', 'props': [('background-color', '#e6f3ff')]}
                 ])\
                 .set_properties(subset=["Matière"], **{'text-align': 'left'})\
@@ -591,7 +591,16 @@ def main():
 
                 df_detail = pd.DataFrame(data)[ordered_columns]
 
+                def colorize_note(val):
+                    if val < 10:
+                        return 'color: red'
+                    elif val < 12:
+                        return 'color: orange'
+                    else:
+                        return 'color: green'
+
                 styled_df = df_detail.style\
+                    .applymap(colorize_note, subset=[titles[lang_code]["note"]])\
                     .format({
                         "Matière": "{}", 
                         titles[lang_code]["note"]: "{:.1f}",
@@ -599,7 +608,7 @@ def main():
                         titles[lang_code]["global_coefficient"]: "{:.1f}"
                     })\
                     .set_table_styles([
-                        {'selector': 'thead th', 'props': [('text-align', 'center')]},
+                        {'selector': 'thead th', 'props': [('background-color', '#911A20'), ('color', 'white')]},
                         {'selector': 'tbody tr:hover', 'props': [('background-color', '#e6f3ff')]}
                     ])\
                     .set_properties(subset=["Matière"], **{'text-align': 'left'})\
@@ -648,7 +657,6 @@ def main():
 
             def colorize(val):
                 return get_average_color(val)
-
             styled_summary = summary_df.style\
                 .applymap(colorize, subset=['Moyenne'])\
                 .format({
@@ -656,7 +664,7 @@ def main():
                     "Coefficient global": "{:.1f}"
                 })\
                 .set_table_styles([
-                    {'selector': 'thead th', 'props': [('text-align', 'center')]},
+                    {'selector': 'thead th', 'props': [('background-color', '#911A20'), ('color', 'white')]},
                     {'selector': 'tbody tr:hover', 'props': [('background-color', '#e6f3ff')]}
                 ])\
                 .set_properties(subset=["Matière"], **{'text-align': 'left'})\
