@@ -413,7 +413,7 @@ def main():
         )
 
         # 5. Import du fichier
-        st.subheader(titles[lang_code]["import_data"])
+        st.markdown(f'<h2 style="color: #911A20">{titles[lang_code]["import_data"]}</h2>', unsafe_allow_html=True)
         uploaded_file = st.file_uploader(
             "Choisissez un fichier Excel",
             type=["xlsx"],
@@ -432,12 +432,14 @@ def main():
                         courses[course] = []
                     courses[course].append((result, coefficient, global_coefficient))
                 st.session_state.courses = courses
-                st.success(titles[lang_code]["success_message"])
+                #st.success(titles[lang_code]["success_message"])
+                st.write(f'<div style="color: #911A20;">{titles[lang_code]["success_message"]}</div>', unsafe_allow_html=True)
+
             except Exception as e:
                 st.error(f"❌ Erreur lors de la lecture du fichier : {e}" if lang_code == "fr" else f"❌ Error reading the file: {e}")
 
         # 6. Exemple de fichier (en bas)
-        st.subheader(titles[lang_code]["title_download_sample"])
+        st.markdown(f'<h2 style="color: #911A20">{titles[lang_code]["title_download_sample"]}</h2>', unsafe_allow_html=True)
         exemple_data = {
             "Course": ["Math", "Math", "Math", "Français", "Français", "Anglais"],
             "Result": [12, 15, 10, 14, 12, 16],
@@ -474,16 +476,16 @@ def main():
 
             # Affichage stylisé avec saut de ligne et valeur bien visible
             st.markdown(f"""
-                <div style="text-align: center; margin: 5px 0 10px; padding: 8px; background-color: #f0f2f6; border-radius: 8px;">
-                    <h3 style="margin-bottom: 4px;">🎯 {titles[lang_code]["global_average"]}</h3>
-                    <div style="font-size: 1.5em; font-weight: bold; color: {color}; margin-top: 0;">{global_average:.2f}/20</div>
+                <div style="text-align: center; margin: 5px 0 10px; padding: 8px; background-color: #98002e; border-radius: 8px;">
+                    <h3 style="margin-bottom: 4px; color: white;">🎯 {titles[lang_code]["global_average"]}</h3>
+                    <div style="font-size: 1.5em; font-weight: bold; color: {color}; margin-top: 0;">{global_average:.2f}</div>
                 </div>
             """, unsafe_allow_html=True)
 
             # Graphique
-            st.subheader(titles[lang_code]["graph_title"])
+            st.markdown(f'<h2 style="color: #911A20;">{titles[lang_code]["graph_title"]}</h2>', unsafe_allow_html=True)
             fig, ax = plt.subplots(figsize=(10, 5))
-            bars = ax.bar(averages.keys(), [avg["average"] for avg in averages.values()], color='#6495ED')
+            bars = ax.bar(averages.keys(), [avg["average"] for avg in averages.values()], color='#911A20')
             for bar in bars:
                 height = bar.get_height()
                 ax.text(
@@ -500,15 +502,15 @@ def main():
                        label=f"{titles[lang_code]['global_average']} ({global_average:.2f})", linewidth=2)
             ax.set_xlabel("", fontsize=16)
             ax.set_ylabel("", fontsize=12)
-            ax.tick_params(axis='x', rotation=45)
+            ax.tick_params(axis='x', rotation=45, colors='#911A20')
             # Ajuster la taille des étiquettes des matières sur l'axe X
             ax.set_xticklabels(averages.keys(), fontsize=18 )  # Taille de police augmentée des matières
-            ax.legend(loc='upper right', fontsize=16)
+            ax.legend(loc='upper right', fontsize=16, labelcolor='#911A20')
             plt.tight_layout()
             st.pyplot(fig)  # Assurez-vous que `fig` est défini avant cet appel
 
             # Tableau synthétique
-            st.subheader(titles[lang_code]["summary_title"])
+            st.markdown(f'<h2 style="color: #911A20;">{titles[lang_code]["summary_title"]}</h2>', unsafe_allow_html=True)
 
             summary_df = pd.DataFrame({
                 'Matière': averages.keys(),
@@ -560,16 +562,15 @@ def main():
 
             # Affichage stylisé avec saut de ligne et valeur bien visible
             st.markdown(f"""
-                <div style="text-align: center; margin: 5px 0 10px; padding: 8px; background-color: #f0f2f6; border-radius: 8px;">
-                    <h3 style="margin-bottom: 4px;">🎯 {titles[lang_code]["global_average"]}</h3>
-                    <div style="font-size: 1.5em; font-weight: bold; color: {color}; margin-top: 0;">{global_average:.2f}/20</div>
+                <div style="text-align: center; margin: 5px 0 10px; padding: 8px; background-color: #98002e; border-radius: 8px;">
+                    <h3 style="margin-bottom: 4px; color: white;">🎯 {titles[lang_code]["global_average"]}</h3>
+                    <div style="font-size: 1.5em; font-weight: bold; color: {color}; margin-top: 0;">{global_average:.2f}</div>
                 </div>
             """, unsafe_allow_html=True)
 
             # Détail des notes
             # Détail des notes
-            st.subheader(titles[lang_code]["complete_detail_title"])
-
+            st.markdown(f'<h2 style="color: #911A20;">{titles[lang_code]["complete_detail_title"]}</h2>', unsafe_allow_html=True)
             if 'courses' in locals() and courses:  # Vérifie que courses existe et contient des données
                 data = []
                 for course, grades in courses.items():
@@ -618,7 +619,7 @@ def main():
     with tab3:
 
         # Onglet téléchargement des résultats
-        st.header(titles[lang_code]["download"])
+        #st.header(titles[lang_code]["download"])
 
         if 'courses' in st.session_state:
             courses = st.session_state.courses
@@ -629,14 +630,15 @@ def main():
             color = "red" if global_average < 10 else "orange" if global_average < 12 else "green"
 
             st.markdown(f"""
-                <div style="text-align: center; margin: 5px 0 10px; padding: 8px; background-color: #f0f2f6; border-radius: 8px;">
-                    <h3 style="margin-bottom: 4px;">🎯 {titles[lang_code]["global_average"]}</h3>
-                    <div style="font-size: 1.5em; font-weight: bold; color: {color}; margin-top: 0;">{global_average:.2f}/20</div>
+                <div style="text-align: center; margin: 5px 0 10px; padding: 8px; background-color: #98002e; border-radius: 8px;">
+                    <h3 style="margin-bottom: 4px; color: white;">🎯 {titles[lang_code]["global_average"]}</h3>
+                    <div style="font-size: 1.5em; font-weight: bold; color: {color}; margin-top: 0;">{global_average:.2f}</div>
                 </div>
             """, unsafe_allow_html=True)
 
             # Nouveau tableau synthétique
-            st.subheader(titles[lang_code]["summary_title"])
+            st.markdown(f'<h2 style="color: #911A20;">{titles[lang_code]["summary_title"]}</h2>', unsafe_allow_html=True)
+
 
             summary_df = pd.DataFrame({
                 'Matière': averages.keys(),
