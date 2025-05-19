@@ -162,19 +162,13 @@ def generate_pdf(global_average, averages, data, pdf_filename="resume_resultats_
     PAGE_WIDTH, PAGE_HEIGHT = letter
     elements = []
 
-    # Titre principal
-    elements.append(Spacer(1, 20))
-    elements.append(BoxedTitleFullWidth("Résumé Infographique des Moyennes & Résultats", width=PAGE_WIDTH-80, height=38, fontSize=19))
-    elements.append(Spacer(1, 8))
-    elements.append(BoxedTitleAutoWidth(f"Moyenne Globale : {float(global_average):.2f}", page_width=PAGE_WIDTH-80, fontSize=15, height=32))
-    elements.append(Spacer(1, 16))
-
-    # Logo
+    # Logo et avertissement
     logo_url = "https://raw.githubusercontent.com/Matkermo/Average/main/pngegg.png"
     response = requests.get(logo_url)
     if response.status_code == 200:
         image_data = BytesIO(response.content)
-        logo = Image(image_data, width=160, height=90)
+        # Changement du ratio de l'image
+        logo = Image(image_data, width=216, height=56.5)  # Largeur : +35%, Hauteur : -15%
     else:
         logo = Paragraph("EDHEC", ParagraphStyle(name='LogoFallback', fontSize=20))
 
@@ -182,25 +176,32 @@ def generate_pdf(global_average, averages, data, pdf_filename="resume_resultats_
         name='NonOff',
         fontSize=14,
         textColor='#911A20',
-        alignment=2,
+        alignment=1,  # Centré
         fontName='Helvetica-Bold'
     )
     non_off_1 = Paragraph('!!! Attention Non officiel EDHEC !!!', style=style_non_off)
     non_off_2 = Paragraph('!!! Résultats informatifs uniquement !!!', style=style_non_off)
+
+    # Création du tableau pour le logo et l'avertissement
     header_table = Table(
-        [[logo, [non_off_1, non_off_2]]],
-        colWidths=[90, 390],
-        hAlign='LEFT',
+        [[logo], [non_off_1], [non_off_2]],
+        colWidths=[PAGE_WIDTH - 80],  # Ajustement de la largeur
+        hAlign='CENTER',
         style=TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-            ('ALIGN', (0,0), (0,0), 'LEFT'),
-            ('ALIGN', (1,0), (1,0), 'RIGHT'),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('TOPPADDING', (0,0), (-1,-1), 0),  # Suppression de l'espace en haut
+            ('BOTTOMPADDING', (0,0), (-1,-1), 0),  # Suppression de l'espace en bas
         ])
     )
 
-    elements.insert(0, Spacer(1, 5))
-    elements.insert(1, header_table)
-    elements.insert(2, Spacer(1, 14))
+    elements.append(header_table)
+    elements.append(Spacer(1, 10))
+
+    elements.append(BoxedTitleFullWidth("Résumé Infographique des Moyennes & Résultats", width=PAGE_WIDTH-80, height=38, fontSize=19))
+    elements.append(Spacer(1, 8))
+    elements.append(BoxedTitleAutoWidth(f"Moyenne Globale : {float(global_average):.2f}", page_width=PAGE_WIDTH-80, fontSize=15, height=32))
+    elements.append(Spacer(1, 16))
 
     # ==== Graphique ====
     x_labels = list(averages.keys())
@@ -213,31 +214,25 @@ def generate_pdf(global_average, averages, data, pdf_filename="resume_resultats_
     for bar, val in zip(bars, y_vals):
         val_str = f"{val:.2f}" if round(val, 2) != round(val, 1) else f"{val:.1f}"
         ax.text(bar.get_x() + bar.get_width()/2, bar.get_height()/2, val_str, ha='center', va='center', color='white', fontsize=13, fontweight='bold')
-
-    max_idx = len(x_labels) - 1
-    max_x = bars[max_idx].get_x() + bars[max_idx].get_width()
-    ax.text(len(averages) + 0.2, global_average, f"{global_average:.2f}",
-            color=ROUGE_FONCE, va='center', ha='left', fontweight='bold', fontsize=14)
-
-    plt.xticks(rotation=25, ha="right", fontsize=12)
+        ax.set_xticklabels(x_labels, rotation=25, ha="right", fontsize=12)  
+        for label in ax.get_xticklabels():
+            label.set_color(ROUGE_FONCE)
     plt.yticks(fontsize=12)
     ax.margins(y=0.18)
     plt.tight_layout()
-
     # Graphique temporaire sur disque (obligé avec reportlab)
     tempdir = tempfile.gettempdir()
     chart_filename = os.path.join(tempdir, "chart_edhec.png")
     plt.savefig(chart_filename, bbox_inches='tight', transparent=False)
     plt.close()
 
-    elements.append(BoxedTitleAutoWidth("Moyenne par Matière", page_width=PAGE_WIDTH-80, fontSize=14, height=28))
-    elements.append(Spacer(1, 5))
-    elements.append(Image(chart_filename, width=420, height=210))
+    chart_image = Image(chart_filename, width=420, height=210)
+    elements.append(chart_image)
     elements.append(Spacer(1, 16))
 
-     # --- Tableau des moyennes (compact) ---
+    # --- Tableau des moyennes (compact) ---
     elements.append(BoxedTitleAutoWidth("Détail des Moyennes par Matière", page_width=PAGE_WIDTH-80, fontSize=11, height=20))
-    elements.append(Spacer(1, 2))
+    elements.append(Spacer(1, 5))
     avg_table_data = [["Matière", "Moyenne"]]
     for mat, val in averages.items():
         v = extract_float(val)
@@ -256,19 +251,21 @@ def generate_pdf(global_average, averages, data, pdf_filename="resume_resultats_
         ('BACKGROUND', (0, 1), (-1, -1), colors.whitesmoke),
         ('GRID', (0, 0), (-1, -1), 1, colors.black),
     ]))
+
+
     elements.append(avg_table)
     elements.append(Spacer(1, 8))
 
     # ----- GESTION SORTIE PDF : disque ou mémoire -----
     if hasattr(pdf_filename, "write"):
         # Mémoire (BytesIO) pour Streamlit
-        doc = SimpleDocTemplate(pdf_filename, pagesize=letter, leftMargin=40, rightMargin=40)
+        doc = SimpleDocTemplate(pdf_filename, pagesize=letter, leftMargin=40, rightMargin=40, topMargin=20)
         doc.build(elements, onFirstPage=lambda canvas, doc: draw_header_with_logo(canvas, doc, logo_url))
         result = pdf_filename
     else:
         # Disque
         pdf_path = os.path.join(os.getcwd(), pdf_filename)
-        doc = SimpleDocTemplate(pdf_path, pagesize=letter, leftMargin=40, rightMargin=40)
+        doc = SimpleDocTemplate(pdf_path, pagesize=letter, leftMargin=40, rightMargin=40, topMargin=20)
         doc.build(elements, onFirstPage=lambda canvas, doc: draw_header_with_logo(canvas, doc, logo_url))
         result = pdf_path
 
@@ -278,6 +275,7 @@ def generate_pdf(global_average, averages, data, pdf_filename="resume_resultats_
         pass
 
     return result
+
     
 def main():
     # ----- CSS global -----
@@ -347,11 +345,7 @@ def main():
             unsafe_allow_html=True
         )
 
-        # 2. Sélecteur de langue
-        language = st.selectbox("", options=["Français 🇫🇷", "Anglais 🇺🇸"])
-        lang_code = "fr" if "Français" in language else "en"
-
-        # 3. Traductions
+        # 2. Traductions
         titles = {
             "fr": {
                 "title": "👩‍🎓 Application de calcul de moyenne 🧑‍🎓",
@@ -370,7 +364,10 @@ def main():
                 "note": "Note",
                 "coefficient": "Coefficient",
                 "global_coefficient": "Coef. Global",
-                "sidebar_warning": "⚠️Avertissement : non officiel, à titre informatif uniquement ⚠️"
+                "sidebar_warning": "⚠️Avertissement : non officiel, à titre informatif uniquement ⚠️",
+                "dashboard": "Tableau de bord",
+                "full_synthesis": "Synthèse complète",
+                "download": "Télécharger"
             },
             "en": {
                 "title": "👩‍🎓 Average Calculation App 🧑‍🎓 ",
@@ -389,9 +386,16 @@ def main():
                 "note": "Grade",
                 "coefficient": "Coefficient",
                 "global_coefficient": "Global Coefficient",
-                "sidebar_warning": "⚠️ Warning: unofficial, for informational purposes only ⚠️"
+                "sidebar_warning": "⚠️ Warning: unofficial, for informational purposes only ⚠️",
+                "dashboard": "Dashboard",
+                "full_synthesis": "Full Synthesis",
+                "download": "Download"
             }
         }
+
+        # . Sélecteur de langue
+        language = st.selectbox("", options=["Français 🇫🇷", "Anglais 🇺🇸"])
+        lang_code = "fr" if "Français" in language else "en"
 
         # 4. Texte warning
         st.markdown(
@@ -411,7 +415,6 @@ def main():
             """,
             unsafe_allow_html=True
         )
-
         # 5. Import du fichier
         st.markdown(f'<h2 style="color: #911A20">{titles[lang_code]["import_data"]}</h2>', unsafe_allow_html=True)
         uploaded_file = st.file_uploader(
@@ -484,7 +487,7 @@ def main():
 
             # Graphique
             st.markdown(f'<h2 style="color: #911A20;">{titles[lang_code]["graph_title"]}</h2>', unsafe_allow_html=True)
-            fig, ax = plt.subplots(figsize=(10, 5))
+            fig, ax = plt.subplots(figsize=(10, 7))
             bars = ax.bar(averages.keys(), [avg["average"] for avg in averages.values()], color='#911A20')
             for bar in bars:
                 height = bar.get_height()
@@ -500,11 +503,13 @@ def main():
                 )
             ax.axhline(y=global_average, color='#FF0000', linestyle='-',  
                        label=f"{titles[lang_code]['global_average']} ({global_average:.2f})", linewidth=2)
-            ax.set_xlabel("", fontsize=16)
+            ax.set_xlabel("", fontsize=12)
             ax.set_ylabel("", fontsize=12)
             ax.tick_params(axis='x', rotation=45, colors='#911A20')
+            ax.set_ylim([0, max([avg["average"] for avg in averages.values()]) * 1.15])
             # Ajuster la taille des étiquettes des matières sur l'axe X
-            ax.set_xticklabels(averages.keys(), fontsize=18 )  # Taille de police augmentée des matières
+            ax.set_xticks(range(len(averages.keys())))
+            ax.set_xticklabels(averages.keys(), fontsize=16, rotation=45, ha='right') # Taille de police augmentée des matières
             ax.legend(loc='upper right', fontsize=16, labelcolor='#911A20')
             plt.tight_layout()
             st.pyplot(fig)  # Assurez-vous que `fig` est défini avant cet appel
