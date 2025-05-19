@@ -181,22 +181,28 @@ def generate_pdf(global_average, averages, data, pdf_filename="resume_resultats_
     )
     non_off_1 = Paragraph('!!! Attention Non officiel EDHEC !!!', style=style_non_off)
     non_off_2 = Paragraph('!!! Résultats informatifs uniquement !!!', style=style_non_off)
+    
+    # Spacer qui sépare le logo des textes
+    spacer_logo_text = Spacer(1, 24)  # 24 points d'espace (ajuste au besoin)
 
-    # Création du tableau pour le logo et l'avertissement
+    # Tableau avec logo, spacer, puis les 2 lignes d'avertissement
     header_table = Table(
-        [[logo], [non_off_1], [non_off_2]],
-        colWidths=[PAGE_WIDTH - 80],  # Ajustement de la largeur
+        [[logo],
+        [spacer_logo_text],
+        [non_off_1],
+        [non_off_2]],
+        colWidths=[PAGE_WIDTH - 80],
         hAlign='CENTER',
         style=TableStyle([
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
             ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-            ('TOPPADDING', (0,0), (-1,-1), 0),  # Suppression de l'espace en haut
-            ('BOTTOMPADDING', (0,0), (-1,-1), 0),  # Suppression de l'espace en bas
+            ('TOPPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
         ])
     )
-
+    
     elements.append(header_table)
-    elements.append(Spacer(1, 10))
+    elements.append(Spacer(1, 24))
 
     elements.append(BoxedTitleFullWidth("Résumé Infographique des Moyennes & Résultats", width=PAGE_WIDTH-80, height=38, fontSize=19))
     elements.append(Spacer(1, 8))
