@@ -181,7 +181,7 @@ def generate_pdf(global_average, averages, data, pdf_filename="resume_resultats_
     )
     non_off_1 = Paragraph('!!! Attention Non officiel EDHEC !!!', style=style_non_off)
     non_off_2 = Paragraph('!!! Résultats informatifs uniquement !!!', style=style_non_off)
-    
+
     # Spacer qui sépare le logo des textes
     spacer_logo_text = Spacer(1, 24)  # 24 points d'espace (ajuste au besoin)
 
@@ -284,6 +284,12 @@ def generate_pdf(global_average, averages, data, pdf_filename="resume_resultats_
 
     
 def main():
+   # Dictionnaire des titres multilingues du bandeau principal
+    titles_main_center = {
+        "fr": "Application de calcul de moyenne",
+        "en": "Average Calculation App"
+    }
+
     # ----- CSS global -----
     st.markdown(
         """
@@ -339,6 +345,9 @@ def main():
         unsafe_allow_html=True
     )
 
+    # -----------------------------
+    #       SIDEBAR & lang_code
+    # -----------------------------
     with st.sidebar:
         # 1. IMAGE tout en haut
         st.markdown(
@@ -399,7 +408,7 @@ def main():
             }
         }
 
-        # . Sélecteur de langue
+        # 3. Sélecteur de langue
         language = st.selectbox("", options=["Français 🇫🇷", "Anglais 🇺🇸"])
         lang_code = "fr" if "Français" in language else "en"
 
@@ -421,6 +430,7 @@ def main():
             """,
             unsafe_allow_html=True
         )
+
         # 5. Import du fichier
         st.markdown(f'<h2 style="color: #911A20">{titles[lang_code]["import_data"]}</h2>', unsafe_allow_html=True)
         uploaded_file = st.file_uploader(
@@ -441,9 +451,7 @@ def main():
                         courses[course] = []
                     courses[course].append((result, coefficient, global_coefficient))
                 st.session_state.courses = courses
-                #st.success(titles[lang_code]["success_message"])
                 st.write(f'<div style="color: #911A20;">{titles[lang_code]["success_message"]}</div>', unsafe_allow_html=True)
-
             except Exception as e:
                 st.error(f"❌ Erreur lors de la lecture du fichier : {e}" if lang_code == "fr" else f"❌ Error reading the file: {e}")
 
@@ -465,7 +473,57 @@ def main():
             file_name="exemple_moyennes.xlsx",
             help="Téléchargez un exemple de fichier Excel à remplir" if lang_code == "fr" else "Download a sample Excel file"
         )
-
+    # --------- HEADER CENTRÉ (Logo, Titre, Warning) ---------
+    st.markdown(
+        """
+        <div style="text-align:center; margin-bottom: 2px;">
+            <img src="https://raw.githubusercontent.com/Matkermo/Average/main/pngegg.png" width="236" height="56.5" style="margin-bottom: 10px;" />
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    # Titre principal stylé
+    st.markdown(
+        f"""
+        <div style="
+            background: #911A20;
+            border-radius: 12px;
+            padding: 16px 0 7px 0;
+            margin-bottom: 18px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+        ">
+            <span style="
+                font-size: 32px;
+                font-family: Helvetica, Arial, sans-serif;
+                color: white;
+                font-weight: bold;
+                letter-spacing: 1.5px;
+            ">
+                {titles_main_center[lang_code]}
+            </span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    # 3. Warning centré seul, sous le bandeau
+    warnings_center = {
+        "fr": " ⚠️ Attention Non officiel EDHEC ⚠️<br>⚠️ Résultats informatifs uniquement ⚠️",
+        "en": "⚠️ Unofficial EDHEC tool ⚠️<br>⚠️ Informative results only ⚠️"
+    }
+    st.markdown(
+        f"""
+        <div style="text-align:center; margin-bottom: 18px;">
+            <span style="font-size:16px; color:#911A20; font-family: Helvetica, Arial, sans-serif; font-weight:bold;">
+                {warnings_center[lang_code]}
+            </span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     # Création des onglets
     tab1, tab2, tab3 = st.tabs([titles[lang_code]["dashboard"], titles[lang_code]["full_synthesis"], titles[lang_code]["download"]])
 
