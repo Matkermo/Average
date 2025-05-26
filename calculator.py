@@ -494,6 +494,7 @@ def main():
             align-items: center;
             justify-content: center;
             box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+            text-align: center;
         ">
             <div style="
                 font-size: 32px;
