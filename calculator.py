@@ -289,7 +289,11 @@ def main():
         "fr": "Application de calcul de moyenne",
         "en": "Average Calculation App"
     }
-
+    # Affichage du titre centré
+    st.markdown(
+        f"<h1 style='text-align: center;'>{titles_main_center[langue]}</h1>",
+        unsafe_allow_html=True
+    )
     # ----- CSS global -----
     st.markdown(
         """
