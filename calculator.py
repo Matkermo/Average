@@ -495,7 +495,7 @@ def main():
             justify-content: center;
             box-shadow: 0 2px 16px rgba(0,0,0,0.06);
         ">
-            <span style="
+            <div style="
                 font-size: 32px;
                 font-family: Helvetica, Arial, sans-serif;
                 color: white;
@@ -503,7 +503,7 @@ def main():
                 letter-spacing: 1.5px;
             ">
                 {titles_main_center[lang_code]}
-            </span>
+            </div>
         </div>
         """,
         unsafe_allow_html=True
