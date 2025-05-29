@@ -262,29 +262,47 @@ def generate_pdf(global_average, averages, data, pdf_filename="resume_resultats_
     elements.append(avg_table)
     elements.append(Spacer(1, 8))
 
-    # === AJOUT DU TABLEAU SYNTHÈSE COMPLÈTE ===
+    # === Synthèse Complète colorée ===
     elements.append(BoxedTitleAutoWidth("Synthèse Complète (Brute)", page_width=PAGE_WIDTH-80, fontSize=11, height=20))
     elements.append(Spacer(1, 5))
 
-    if isinstance(data, pd.DataFrame):
-        synth_data = [data.columns.tolist()] + data.values.tolist()
-        synth_table = Table(synth_data, repeatRows=1, hAlign='CENTER')
-        synth_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+    if isinstance(data, pd.DataFrame) and not data.empty:
+        clean_df = data.copy()
+        synth_data = [clean_df.columns.tolist()]
+        table_styles = [
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#911A20")),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 9),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 5),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 1), (-1, -1), 8),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-        ]))
+            ('FONTSIZE', (0, 0), (-1, 0), 8),
+            ('FONTSIZE', (0, 1), (-1, -1), 7),
+            ('GRID', (0, 0), (-1, -1), 0.25, colors.grey),
+        ]
+
+        note_col_name = "Note"  # adapte si multilingue
+        note_col = clean_df.columns.get_loc(note_col_name)
+        for row_idx, row in enumerate(clean_df.values.tolist(), start=1):
+            synth_data.append(row)
+            try:
+                note = float(row[note_col])
+                if note < 10:
+                    bg_color = colors.HexColor("#f8d7da")
+                elif note < 12:
+                    bg_color = colors.HexColor("#fff3cd")
+                else:
+                    bg_color = colors.HexColor("#d4edda")
+                table_styles.append(('BACKGROUND', (note_col, row_idx), (note_col, row_idx), bg_color))
+            except:
+                pass
+
+        col_widths = [100] + [60] * (len(clean_df.columns) - 1)
+        synth_table = Table(synth_data, colWidths=col_widths, repeatRows=1, hAlign='CENTER')
+        synth_table.setStyle(TableStyle(table_styles))
         elements.append(synth_table)
     else:
         elements.append(Paragraph("Aucune donnée de synthèse disponible.", ParagraphStyle(name='Warning', fontSize=10, textColor=colors.red)))
-    
+
     # ----- GESTION SORTIE PDF : disque ou mémoire -----
     if hasattr(pdf_filename, "write"):
         # Mémoire (BytesIO) pour Streamlit
