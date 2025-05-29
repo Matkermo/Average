@@ -262,6 +262,29 @@ def generate_pdf(global_average, averages, data, pdf_filename="resume_resultats_
     elements.append(avg_table)
     elements.append(Spacer(1, 8))
 
+    # === AJOUT DU TABLEAU SYNTHÈSE COMPLÈTE ===
+    elements.append(BoxedTitleAutoWidth("Synthèse Complète (Brute)", page_width=PAGE_WIDTH-80, fontSize=11, height=20))
+    elements.append(Spacer(1, 5))
+
+    if isinstance(data, pd.DataFrame):
+        synth_data = [data.columns.tolist()] + data.values.tolist()
+        synth_table = Table(synth_data, repeatRows=1, hAlign='CENTER')
+        synth_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 5),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ]))
+        elements.append(synth_table)
+    else:
+        elements.append(Paragraph("Aucune donnée de synthèse disponible.", ParagraphStyle(name='Warning', fontSize=10, textColor=colors.red)))
+    
     # ----- GESTION SORTIE PDF : disque ou mémoire -----
     if hasattr(pdf_filename, "write"):
         # Mémoire (BytesIO) pour Streamlit
